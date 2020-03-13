@@ -10,6 +10,7 @@ if __name__ == "__main__":
     for filename in tweet_filenames:
         with open(data_dir + filename) as f:
             data = json.load(f)
-            for tweet in data[1:2]:
+            for tweet in data:
+                # print(tweet)
                 db.insert_tweet(tweet)
-                db.close_db()
+                # db.close_db()
