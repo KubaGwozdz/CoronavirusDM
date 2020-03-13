@@ -113,13 +113,18 @@ class DBManager:
     def close_db(self):
         self.connection.close()
 
-        # self.cur.execute("""
-        # SELECT * FROM user
-        #     WHERE id = ?""", (user_id,))
-        #
-        # user = self.cur.fetchone()
-        # if user is None:
-        #     user_id = 1     #UNKNOWN
-        # else:
-        #     use
-        # print(user)
+#--------------------------------------------RETWEETS-----------------------------------------------#
+
+    def insert_retweets(self, retweets):
+
+        insert_sql = "INSERT INTO retweet" \
+                     " (id, user_id, tweet_id, created_at, reply_count, retweet_count, " \
+                     "favorite_count, in_reply_to_status_id, in_reply_to_user_id) " \
+                     "VALUES (?,?,?,?,?,?,?,?,?)"
+        vals = list(map(lambda retweet: (retweet['id'], retweet['user_id'], retweet['tweet_id'], retweet['created_at'],
+            retweet['reply_count'], retweet['retweet_count'], retweet['favorite_count'],
+            retweet['in_reply_to_status_id'], retweet['in_reply_to_user_id']), retweets))
+
+        self.cur.executemany(insert_sql, vals)
+        self.connection.commit()
+
