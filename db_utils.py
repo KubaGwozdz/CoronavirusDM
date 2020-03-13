@@ -41,8 +41,6 @@ class DBManager:
                 existing_hashtag_ids.append(tag['id'])
                 existing_hashtags.append(tag['text'])
 
-            # print(hashtags)
-            # print(existing_hashtags)
             new_hashtags = list(filter(lambda tag: tag not in existing_hashtags, hashtags))
 
             insert_hashtags_sql = "INSERT INTO hashtag (text) VALUES (?)"
@@ -110,21 +108,54 @@ class DBManager:
             self.save_hashtags(tweet, hashtags)
             self.save_usermentions(tweet)
 
-    def close_db(self):
-        self.connection.close()
+    def update_user(self, new_user, old_user):
+        names = []
+        vals = []
+        fields = ['followers_count', 'friends_count']
+        for field in fields:
+            if new_user[field] > old_user[field]:
+                names.append(field)
+                vals.append(new_user[field])
 
-#--------------------------------------------RETWEETS-----------------------------------------------#
+        if len(names) > 0:
+            update_sql = "UPDATE user SET "
+            for name in names:
+                update_sql += name + ' = ?, '
+            update_sql = update_sql[:-2]
+            update_sql += "WHERE id = " + str(old_user['id'])
+            self.cur.execute(update_sql, tuple(vals))
+            self.connection.commit()
+
+    def insert_user(self, user):
+        print(user)
+        id = user['id']
+
+        select_sql = "SELECT id, followers_count, friends_count FROM user WHERE id = ?"
+        self.cur.execute(select_sql, (id,))
+
+        user_db = self.cur.fetchone()
+        if user_db is not None:
+            self.update_user(user, user_db)
+        else:
+            insert_sql = "INSERT INTO user " \
+                         "(id, screen_name, location, followers_count, friends_count, created_at) VALUES " \
+                         "(?, ?, ?, ?, ?, ?)"
+            val = (user['id'], user['screen_name'], user['location'], user['followers_count'], user['friends_count'],
+                   user['created_at'])
+            self.cur.execute(insert_sql, val)
+            self.connection.commit()
 
     def insert_retweets(self, retweets):
-
         insert_sql = "INSERT INTO retweet" \
                      " (id, user_id, tweet_id, created_at, reply_count, retweet_count, " \
                      "favorite_count, in_reply_to_status_id, in_reply_to_user_id) " \
                      "VALUES (?,?,?,?,?,?,?,?,?)"
         vals = list(map(lambda retweet: (retweet['id'], retweet['user_id'], retweet['tweet_id'], retweet['created_at'],
-            retweet['reply_count'], retweet['retweet_count'], retweet['favorite_count'],
-            retweet['in_reply_to_status_id'], retweet['in_reply_to_user_id']), retweets))
+                                         retweet['reply_count'], retweet['retweet_count'], retweet['favorite_count'],
+                                         retweet['in_reply_to_status_id'], retweet['in_reply_to_user_id']), retweets))
 
         self.cur.executemany(insert_sql, vals)
         self.connection.commit()
 
+    def close_db(self):
+        self.connection.close()

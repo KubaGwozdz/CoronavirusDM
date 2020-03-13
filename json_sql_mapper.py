@@ -2,12 +2,16 @@ import json
 import db_utils as db
 import file_parser
 
-tweet_filenames = ['11_3_2020retweets.json']
-data_dir = './data/retweets/'
+rt_filenames = ['8_3_2020retweets.json']
+tw_data_dir = './data/tweets/'
+rt_data_dir = './data/retweets/'
+usr_data_dir = './data/users/'
+
+data_dir = rt_data_dir
 
 if __name__ == "__main__":
-    db = db.DBManager()
-    for filename in tweet_filenames:
+    db= db.DBManager()
+    for filename in rt_filenames:
         with open(data_dir + filename) as f:
             data = json.load(f)
             if 'retweets' in data_dir:
