@@ -8,7 +8,8 @@ from dateutil.parser import parse
 
 from passwords import access_token, access_token_secret, consumer_key, consumer_secret
 
-tracklist = ['#Coronvirus', '#COVID19', '#COVID_19', '#COVID-19', '#2019nCov', '#CoronaVirusUpdate', '#CoronaOutbreak', '#Coronavirus', '#Koronawirus']
+tracklist = ['#Coronvirus', '#COVID19', '#COVID_19', '#COVID-19', '#2019nCov', '#CoronaVirusUpdate', '#CoronaOutbreak',
+             '#Coronavirus', '#Koronawirus']
 
 
 class CoronavirusListener(StreamListener):
@@ -28,14 +29,14 @@ class CoronavirusListener(StreamListener):
             tweet['hashtags'] = data['extended_tweet']['entities']['hashtags']
             tweet['user_mentions'] = data['extended_tweet']['entities']['user_mentions']
         else:
-            tweet['text'] = data ['text']
+            tweet['text'] = data['text']
             tweet['hashtags'] = data['entities']['hashtags']
             tweet['user_mentions'] = data['entities']['user_mentions']
 
         if data['is_quote_status']:
             tweet['quoted_status_id'] = data['quoted_status_id']
             res = (tweet, self.parse_user(data))
-            if('quoted_status' not in data):
+            if ('quoted_status' not in data):
                 return [res]
             return [res] + self.parse_tweets(data['quoted_status'])
 
@@ -60,12 +61,12 @@ class CoronavirusListener(StreamListener):
                 date_str = str(date.day) + '_' + str(date.month) + '_' + str(date.year)
 
                 users_filename = date_str + 'users.json'
-                tweets_filename = date_str +'tweets.json'
-                retweets_filename = date_str +'retweets.json'
+                tweets_filename = date_str + 'tweets.json'
+                retweets_filename = date_str + 'retweets.json'
 
-                if 'retweeted_status' in loaded_tweet:     #is a retweet
+                if 'retweeted_status' in loaded_tweet:  # is a retweet
                     retweet_fields = ['created_at', 'id', 'in_reply_to_status_id', 'in_reply_to_user_id', 'quote_count',
-                        'reply_count', 'retweet_count', 'favorite_count']
+                                      'reply_count', 'retweet_count', 'favorite_count']
                     retweet = dict()
 
                     for field in retweet_fields:
@@ -89,7 +90,7 @@ class CoronavirusListener(StreamListener):
                     tweets_users = self.parse_tweets(loaded_tweet)
 
                 with open(tweets_filename, 'a') as tweets_file:
-                    with open(date_str+'users.json', 'a') as users_file:
+                    with open(date_str + 'users.json', 'a') as users_file:
                         for (tweet, user) in tweets_users:
                             tweets_file.write(json.dumps(tweet))
                             tweets_file.write(',\n')
@@ -101,7 +102,6 @@ class CoronavirusListener(StreamListener):
             print(str(e))
             return True
 
-
     def on_error(self, status):
         print(status)
         return True
@@ -112,4 +112,9 @@ if __name__ == '__main__':
     auth = OAuthHandler(consumer_key, consumer_secret)
     auth.set_access_token(access_token, access_token_secret)
     stream = Stream(auth, listener)
-    stream.filter(track=tracklist)
+    while True:
+        try:
+            stream.filter(track=tracklist)
+        except BaseException as e:
+            print(str(e))
+            continue
