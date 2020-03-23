@@ -17,3 +17,13 @@ class DataSelector(DBManager):
             num = row[1]
             result[date] = num
         return result
+
+    def get_most_popular_users(self):
+        select_sql = "SELECT screen_name, followers_count, friends_count " \
+                     "FROM user ORDER BY followers_count DESC, friends_count DESC LIMIT 100"
+        self.cur.execute(select_sql)
+        data = self.cur.fetchall()
+        result = dict()
+        for row in data:
+            result[row[0]] = (row[1], row[2])
+        return result
