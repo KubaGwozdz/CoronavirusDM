@@ -148,8 +148,8 @@ def most_active_users_retweets(db):
     return fig
 
 
-def most_active_users_per_day(db):
-    data = db.get_most_active_users_per_day()
+def most_active_users_per_day_tweets(db):
+    data = db.get_most_active_users_per_day_tweets()
     fig = go.Figure()
     for tag in data.keys():
         fig.add_trace(
@@ -161,36 +161,76 @@ def most_active_users_per_day(db):
             )
         )
     fig.update_layout(
-        title_text="Most active users per day",
+        title_text="Most active tweeting users per day",
         xaxis_title="date",
         yaxis_title="number of tweets"
+    )
+    return fig
+
+def newly_created_accounts(db):
+    data = db.get_newly_created_accounts()
+
+    fig = go.Figure()
+    fig.add_trace(
+        go.Scatter(
+            x=[date for date in data.keys()],
+            y=[number for number in list(data.values())]
+        )
+    )
+    fig.update_layout(
+        title_text='Newly created accounts',
+        xaxis_title="date",
+        yaxis_title="number of new accounts"
+    )
+    return fig
+
+def newly_created_accounts_pattern(db):
+    data = db.get_newly_created_accounts_pattern()
+
+    fig = go.Figure()
+    fig.add_trace(
+        go.Scatter(
+            x=[date for date in data.keys()],
+            y=[number for number in list(data.values())]
+        )
+    )
+    fig.update_layout(
+        title_text='Newly created accounts where name matched pattern',
+        xaxis_title="date",
+        yaxis_title="number of new accounts"
     )
     return fig
 
 
 if __name__ == "__main__":
     db = DataSelector()
-    tweets_per_day_fig = tweets_per_day(db)
-    tweets_per_day_fig.show()
+    # tweets_per_day_fig = tweets_per_day(db)
+    # tweets_per_day_fig.show()
+    #
+    # retweets_per_day_fig = retweets_per_day(db)
+    # retweets_per_day_fig.show()
+    #
+    # tags_per_day_fig = most_popular_hashtags_per_day(db)
+    # tags_per_day_fig.show()
+    #
+    # popular_users_followers, popular_users_friends = popular_users(db)
+    # popular_users_followers.show()
+    # popular_users_friends.show()
+    #
+    # active_users_fig = most_active_users(db)
+    # active_users_fig.show()
+    #
+    # most_active_users_retweets_fig = most_active_users_retweets(db)
+    # most_active_users_retweets_fig.show()
+    #
+    # most_popular_hashtags_fig = most_popular_hashtags(db)
+    # most_popular_hashtags_fig.show()
 
-    retweets_per_day_fig = retweets_per_day(db)
-    retweets_per_day_fig.show()
+    # active_users_per_day_tweets_fig = most_active_users_per_day_tweets(db)
+    # active_users_per_day_tweets_fig.show()
 
-    tags_per_day_fig = most_popular_hashtags_per_day(db)
-    tags_per_day_fig.show()
+    # newly_created_accounts_fig = newly_created_accounts(db)
+    # newly_created_accounts_fig.show()
 
-    popular_users_followers, popular_users_friends = popular_users(db)
-    popular_users_followers.show()
-    popular_users_friends.show()
-
-    active_users_fig = most_active_users(db)
-    active_users_fig.show()
-
-    most_active_users_retweets_fig = most_active_users_retweets(db)
-    most_active_users_retweets_fig.show()
-
-    most_popular_hashtags_fig = most_popular_hashtags(db)
-    most_popular_hashtags_fig.show()
-
-    active_users_per_day_fig = most_active_users_per_day(db)
-    active_users_per_day_fig.show()
+    newly_created_accounts_pattern_fig = newly_created_accounts_pattern(db)
+    newly_created_accounts_pattern_fig.show()

@@ -122,10 +122,10 @@ class DataSelector(DBManager):
             result[row['screen_name']] = row['number']
         return result
 
-    def get_most_active_users_per_day(self):
+    def get_most_active_users_per_day_tweets(self):
         select_sql = "SELECT u.screen_name, t.created_at, count(*) AS number FROM tweet t " \
                      "JOIN user u on t.user_id = u.id " \
-                     "WHERE t.created_at > '2020-03-07' and DATE(created_at) != '2020-03-17' and u.id in " \
+                     "WHERE t.created_at > '2020-03-07' and DATE(t.created_at) != '2020-03-17' and u.id in " \
                      "(SELECT u.id from tweet t " \
                      "JOIN user u on t.user_id = u.id " \
                      "GROUP BY t.user_id " \
@@ -146,3 +146,29 @@ class DataSelector(DBManager):
             result[row['screen_name']]['dates'].append(datetime.strptime(row['created_at'], "%Y-%m-%d %H:%M:%S").date())
             result[row['screen_name']]['numbers'].append(row['number'])
         return result
+
+    def get_newly_created_accounts(self):
+        select_sql = "SELECT u.created_at, count(*) AS number FROM user u " \
+                     "WHERE u.created_at >= '2020-01-01' " \
+                     "GROUP BY u.created_at"
+        self.cur.execute(select_sql)
+        data = self.cur.fetchall()
+
+        result = dict()
+        for row in data:
+            result[row['created_at']] = row['number']
+        return result
+
+    def get_newly_created_accounts_pattern(self):
+        select_sql = "SELECT u.created_at, count(*) AS number FROM user u " \
+                     "WHERE u.created_at > '2019-12-31' " \
+                     "AND (u.screen_name LIKE '%cov%' OR u.screen_name LIKE '%corona%' OR u.screen_name LIKE '%virus%') " \
+                     "GROUP BY u.created_at"
+        self.cur.execute(select_sql)
+        data = self.cur.fetchall()
+
+        result = dict()
+        for row in data:
+            result[row['created_at']] = row['number']
+        return result
+
