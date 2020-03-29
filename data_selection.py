@@ -9,7 +9,20 @@ class DataSelector(DBManager):
 
     def get_number_of_tweets_per_day(self):
         select_sql = "SELECT created_at , count(*) AS number FROM tweet " \
-                     "WHERE created_at > '2020-03-07' " \
+                     "WHERE created_at > '2020-03-07' and DATE(created_at) != '2020-03-17' " \
+                     "GROUP BY DATE(created_at)"
+        self.cur.execute(select_sql)
+        data = self.cur.fetchall()
+        result = dict()
+        for row in data:
+            date = row['created_at']
+            num = row['number']
+            result[date] = num
+        return result
+
+    def get_number_of_retweets_per_day(self):
+        select_sql = "SELECT created_at , count(*) AS number FROM retweet " \
+                     "WHERE created_at > '2020-03-07' and DATE(created_at) != '2020-03-17' " \
                      "GROUP BY DATE(created_at)"
         self.cur.execute(select_sql)
         data = self.cur.fetchall()
@@ -24,7 +37,8 @@ class DataSelector(DBManager):
         select_sql = "SELECT hashtag.text, t.created_at, count(*) AS number from hashtag " \
                      "JOIN hashtag_tweet h_t on hashtag.id = h_t.hashtag_id " \
                      "JOIN tweet t on h_t.tweet_id = t.id " \
-                     "WHERE t.created_at > '2020-03-07' AND h_t.hashtag_id in (SELECT hashtag_id FROM hashtag_tweet " \
+                     "WHERE t.created_at > '2020-03-07' and DATE(created_at) != '2020-03-17' " \
+                     "AND h_t.hashtag_id in (SELECT hashtag_id FROM hashtag_tweet " \
                      "GROUP BY hashtag_id " \
                      "ORDER BY count(*) DESC " \
                      "LIMIT 10) " \
@@ -43,14 +57,41 @@ class DataSelector(DBManager):
 
         return result
 
-    def get_most_popular_users(self):
-        select_sql = "SELECT screen_name, followers_count, friends_count " \
-                     "FROM user ORDER BY followers_count DESC, friends_count DESC LIMIT 100"
+    def get_most_popular_hashtags(self):
+        select_sql = "SELECT h.text, count(*) AS number from hashtag AS h " \
+                     "JOIN hashtag_tweet ht on h.id = ht.hashtag_id " \
+                     "WHERE ht.hashtag_id in (SELECT hashtag_id FROM  hashtag_tweet " \
+                     "GROUP BY hashtag_id " \
+                     "ORDER BY count(*) DESC " \
+                     "LIMIT 10) " \
+                     "GROUP BY ht.hashtag_id"
+
         self.cur.execute(select_sql)
         data = self.cur.fetchall()
         result = dict()
         for row in data:
-            result[row['screen_name']] = (row['followers_count'], row['friends_count'])
+            result[row['text']] = row['number']
+        print(result)
+        return result
+
+    def get_most_popular_users_followers(self):
+        select_sql = "SELECT screen_name, followers_count " \
+                     "FROM user ORDER BY followers_count DESC LIMIT 100"
+        self.cur.execute(select_sql)
+        data = self.cur.fetchall()
+        result = dict()
+        for row in data:
+            result[row['screen_name']] = row['followers_count']
+        return result
+
+    def get_most_popular_users_friends(self):
+        select_sql = "SELECT screen_name, friends_count " \
+                     "FROM user ORDER BY friends_count DESC LIMIT 100"
+        self.cur.execute(select_sql)
+        data = self.cur.fetchall()
+        result = dict()
+        for row in data:
+            result[row['screen_name']] = row['friends_count']
         return result
 
     def get_most_active_users(self):
@@ -67,10 +108,24 @@ class DataSelector(DBManager):
             result[row['screen_name']] = row['number']
         return result
 
+    def get_most_active_users_retweets(self):
+        select_sql = "SELECT u.screen_name, count(*) AS number FROM retweet t " \
+                     "JOIN user u on t.user_id = u.id " \
+                     "WHERE t.created_at > '2020-03-07' " \
+                     "GROUP BY t.user_id " \
+                     "ORDER BY count(*) DESC " \
+                     "LIMIT 10"
+        self.cur.execute(select_sql)
+        data = self.cur.fetchall()
+        result = dict()
+        for row in data:
+            result[row['screen_name']] = row['number']
+        return result
+
     def get_most_active_users_per_day(self):
         select_sql = "SELECT u.screen_name, t.created_at, count(*) AS number FROM tweet t " \
                      "JOIN user u on t.user_id = u.id " \
-                     "WHERE t.created_at > '2020-03-07' and u.id in " \
+                     "WHERE t.created_at > '2020-03-07' and DATE(created_at) != '2020-03-17' and u.id in " \
                      "(SELECT u.id from tweet t " \
                      "JOIN user u on t.user_id = u.id " \
                      "GROUP BY t.user_id " \

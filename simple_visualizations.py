@@ -22,6 +22,24 @@ def tweets_per_day(db):
     )
     return fig
 
+def retweets_per_day(db):
+    data = db.get_number_of_retweets_per_day()
+    X = [datetime.strptime(d, "%Y-%m-%d %H:%M:%S").date() for d in data.keys()]
+    Y = list(data.values())
+
+    fig = go.Figure()
+    fig.add_trace(go.Scatter(
+        x=X,
+        y=Y,
+        line_color='deepskyblue',
+        opacity=0.8))
+    fig.update_layout(
+        title_text="Retweets per day",
+        xaxis_title="date",
+        yaxis_title="number of retweets"
+    )
+    return fig
+
 
 def most_popular_hashtags_per_day(db):
     data = db.get_most_popular_hashtags_per_day()
@@ -42,29 +60,56 @@ def most_popular_hashtags_per_day(db):
     )
     return fig
 
+def most_popular_hashtags(db):
+    data = db.get_most_popular_hashtags()
+    fig = go.Figure()
+    fig.add_trace(
+        go.Scatter(
+            x=list(data.keys()),
+            y=list(data.values()),
+            name='hashtags',
+            opacity=0.8
+        )
+    )
+    fig.update_layout(
+        title_text="Most popular hashtags",
+        xaxis_title="hashtag",
+        yaxis_title="number of tweets with hashtag"
+    )
+    return fig
+
 
 def popular_users(db):
-    data = db.get_most_popular_users()
-    X = list(data.keys())
-    Y = list(data.values())
+    data_followers = db.get_most_popular_users_followers()
+    data_friends = db.get_most_popular_users_friends()
+    X_followers = list(data_followers.keys())
+    Y_followers = list(data_followers.values())
+    X_friends = list(data_friends.keys())
+    Y_friends = list(data_friends.values())
 
-    fig = go.Figure()
-    fig.add_trace(go.Bar(
-        x=X,
-        y=[friends for (followers, friends) in Y],
+    fig1 = go.Figure()
+    fig2 = go.Figure()
+    fig1.add_trace(go.Bar(
+        x=X_friends,
+        y=Y_friends,
         name='friends'
     ))
-    fig.add_trace(go.Bar(
-        x=X,
-        y=[followers for (followers, friends) in Y],
+    fig2.add_trace(go.Bar(
+        x=X_followers,
+        y=Y_followers,
         name='followers'
     ))
-    fig.update_layout(
-        title_text='Most popular users',
+    fig1.update_layout(
+        title_text='Most popular users due to friends',
         xaxis_title="username",
         yaxis_title="number of people"
     )
-    return fig
+    fig2.update_layout(
+        title_text='Most popular users due to followers',
+        xaxis_title="username",
+        yaxis_title="number of people"
+    )
+    return fig1, fig2
 
 
 def most_active_users(db):
@@ -81,6 +126,24 @@ def most_active_users(db):
         title_text='Most active users since 2020-03-07',
         xaxis_title="username",
         yaxis_title="number of tweets"
+    )
+    return fig
+
+
+def most_active_users_retweets(db):
+    data = db.get_most_active_users_retweets()
+
+    fig = go.Figure()
+    fig.add_trace(
+        go.Bar(
+            x=[name for name in data.keys()],
+            y=[number for number in list(data.values())]
+        )
+    )
+    fig.update_layout(
+        title_text='Most active users since 2020-03-07',
+        xaxis_title="username",
+        yaxis_title="number of retweets"
     )
     return fig
 
@@ -107,17 +170,27 @@ def most_active_users_per_day(db):
 
 if __name__ == "__main__":
     db = DataSelector()
-    # tweets_per_day_fig = tweets_per_day(db)
-    # tweets_per_day_fig.show()
-    #
-    # tags_per_day_fig = most_popular_hashtags_per_day(db)
-    # tags_per_day_fig.show()
-    #
-    # popular_users_fig = popular_users(db)
-    # popular_users_fig.show()
-    #
-    # active_users_fig = most_active_users(db)
-    # active_users_fig.show()
+    tweets_per_day_fig = tweets_per_day(db)
+    tweets_per_day_fig.show()
+
+    retweets_per_day_fig = retweets_per_day(db)
+    retweets_per_day_fig.show()
+
+    tags_per_day_fig = most_popular_hashtags_per_day(db)
+    tags_per_day_fig.show()
+
+    popular_users_followers, popular_users_friends = popular_users(db)
+    popular_users_followers.show()
+    popular_users_friends.show()
+
+    active_users_fig = most_active_users(db)
+    active_users_fig.show()
+
+    most_active_users_retweets_fig = most_active_users_retweets(db)
+    most_active_users_retweets_fig.show()
+
+    most_popular_hashtags_fig = most_popular_hashtags(db)
+    most_popular_hashtags_fig.show()
 
     active_users_per_day_fig = most_active_users_per_day(db)
     active_users_per_day_fig.show()
