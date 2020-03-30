@@ -22,6 +22,7 @@ def tweets_per_day(db):
     )
     return fig
 
+
 def retweets_per_day(db):
     data = db.get_number_of_retweets_per_day()
     X = [datetime.strptime(d, "%Y-%m-%d %H:%M:%S").date() for d in data.keys()]
@@ -59,6 +60,7 @@ def most_popular_hashtags_per_day(db):
         yaxis_title="number of tweets with hashtag"
     )
     return fig
+
 
 def most_popular_hashtags(db):
     data = db.get_most_popular_hashtags()
@@ -151,12 +153,12 @@ def most_active_users_retweets(db):
 def most_active_users_per_day_tweets(db):
     data = db.get_most_active_users_per_day_tweets()
     fig = go.Figure()
-    for tag in data.keys():
+    for s_name in data.keys():
         fig.add_trace(
             go.Scatter(
-                x=data[tag]['dates'],
-                y=data[tag]['numbers'],
-                name=tag,
+                x=data[s_name]['dates'],
+                y=data[s_name]['numbers'],
+                name=s_name,
                 opacity=0.8
             )
         )
@@ -202,35 +204,130 @@ def newly_created_accounts_pattern(db):
     return fig
 
 
+def tw_lang_per_day(db):
+    data = db.get_tw_lang_per_day()
+    fig = go.Figure()
+    for lang in data.keys():
+        fig.add_trace(
+            go.Scatter(
+                x=data[lang]['dates'],
+                y=data[lang]['numbers'],
+                name=lang,
+                opacity=0.8
+            )
+        )
+    fig.update_layout(
+        title_text="Tweets in language per day",
+        xaxis_title="date",
+        yaxis_title="number of tweets"
+    )
+    return fig
+
+
+def influencers_per_day(db):
+    data = db.get_influencers_per_day()
+    t_fig = go.Figure()
+    for s_name in data.keys():
+        t_fig.add_trace(
+            go.Scatter(
+                x=data[s_name]['dates'],
+                y=data[s_name]['numbers'],
+                name=s_name,
+                opacity=0.8
+            )
+        )
+    t_fig.update_layout(
+        title_text="Influencers' tweets per day",
+        xaxis_title="date",
+        yaxis_title="number of tweets"
+    )
+    rtw_fig = go.Figure()
+    for s_name in data.keys():
+        rtw_fig.add_trace(
+            go.Scatter(
+                x=data[s_name]['dates'],
+                y=data[s_name]['retweet_count'],
+                name=s_name,
+                opacity=0.8
+            )
+        )
+    rtw_fig.update_layout(
+        title_text="Retweets of Influencers' tweets per day",
+        xaxis_title="date",
+        yaxis_title="number of retweets"
+    )
+    rep_fig = go.Figure()
+    for s_name in data.keys():
+        rep_fig.add_trace(
+            go.Scatter(
+                x=data[s_name]['dates'],
+                y=data[s_name]['reply_count'],
+                name=s_name,
+                opacity=0.8
+            )
+        )
+    rep_fig.update_layout(
+        title_text="Replies to Influencers' tweets per day",
+        xaxis_title="date",
+        yaxis_title="number of replies"
+    )
+    q_fig = go.Figure()
+    for s_name in data.keys():
+        q_fig.add_trace(
+            go.Scatter(
+                x=data[s_name]['dates'],
+                y=data[s_name]['quote_count'],
+                name=s_name,
+                opacity=0.8
+            )
+        )
+    q_fig.update_layout(
+        title_text="Quotes of Influencers' tweets per day",
+        xaxis_title="date",
+        yaxis_title="number of quotes"
+    )
+
+    return t_fig, rtw_fig, rep_fig, q_fig
+
+
 if __name__ == "__main__":
     db = DataSelector()
     # tweets_per_day_fig = tweets_per_day(db)
     # tweets_per_day_fig.show()
-    #
+
     # retweets_per_day_fig = retweets_per_day(db)
     # retweets_per_day_fig.show()
-    #
+
     # tags_per_day_fig = most_popular_hashtags_per_day(db)
     # tags_per_day_fig.show()
-    #
+
     # popular_users_followers, popular_users_friends = popular_users(db)
     # popular_users_followers.show()
     # popular_users_friends.show()
-    #
+
     # active_users_fig = most_active_users(db)
     # active_users_fig.show()
-    #
+
     # most_active_users_retweets_fig = most_active_users_retweets(db)
     # most_active_users_retweets_fig.show()
-    #
+
     # most_popular_hashtags_fig = most_popular_hashtags(db)
     # most_popular_hashtags_fig.show()
 
     # active_users_per_day_tweets_fig = most_active_users_per_day_tweets(db)
     # active_users_per_day_tweets_fig.show()
 
-    # newly_created_accounts_fig = newly_created_accounts(db)
-    # newly_created_accounts_fig.show()
+    # tw_lang_per_day_fig = tw_lang_per_day(db)
+    # tw_lang_per_day_fig.show()
+
+    # inf_tw_per_day_fig, inf_rtw_per_day_fig, inf_rep_per_day_fig, inf_q_per_day_fig = influencers_per_day(db)
+    # inf_tw_per_day_fig.show()
+    # inf_rtw_per_day_fig.show()
+    # inf_rep_per_day_fig.show()
+    # inf_q_per_day_fig.show()
+
+    newly_created_accounts_fig = newly_created_accounts(db)
+    newly_created_accounts_fig.show()
 
     newly_created_accounts_pattern_fig = newly_created_accounts_pattern(db)
     newly_created_accounts_pattern_fig.show()

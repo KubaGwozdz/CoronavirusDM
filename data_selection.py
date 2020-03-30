@@ -6,6 +6,8 @@ from db_utils import DBManager
 class DataSelector(DBManager):
     def __init__(self):
         super().__init__()
+        self.graph_users = 500
+        self.graph_nodes = []
 
     def get_number_of_tweets_per_day(self):
         select_sql = "SELECT created_at , count(*) AS number FROM tweet " \
@@ -125,9 +127,8 @@ class DataSelector(DBManager):
     def get_most_active_users_per_day_tweets(self):
         select_sql = "SELECT u.screen_name, t.created_at, count(*) AS number FROM tweet t " \
                      "JOIN user u on t.user_id = u.id " \
-                     "WHERE t.created_at > '2020-03-07' and DATE(t.created_at) != '2020-03-17' and u.id in " \
-                     "(SELECT u.id from tweet t " \
-                     "JOIN user u on t.user_id = u.id " \
+                     "WHERE t.created_at > '2020-03-07' and t.created_at <> '2020-03-17' and u.id in " \
+                     "(SELECT t.user_id from tweet t " \
                      "GROUP BY t.user_id " \
                      "ORDER BY count(*) DESC " \
                      "LIMIT 10) " \
@@ -145,6 +146,107 @@ class DataSelector(DBManager):
 
             result[row['screen_name']]['dates'].append(datetime.strptime(row['created_at'], "%Y-%m-%d %H:%M:%S").date())
             result[row['screen_name']]['numbers'].append(row['number'])
+        return result
+
+    def get_graph_nodes(self):
+        if len(self.graph_nodes) == 0:
+            select_sql = "SELECT t.user_id AS id from tweet t " \
+                         "GROUP BY t.user_id " \
+                         "ORDER BY sum(t.retweet_count) DESC " \
+                         "LIMIT " + str(self.graph_users)
+            self.cur.execute(select_sql)
+            data = self.cur.fetchall()
+            data = [u['id'] for u in data]
+            self.graph_nodes = str(tuple(data))
+            return self.graph_nodes
+        else:
+            return self.graph_nodes
+
+    def get_user_nodes(self):
+        select_sql = "SELECT u.id, u.screen_name, u.followers_count, u.friends_count FROM user u " \
+                     "WHERE u.id IN" + self.get_graph_nodes()
+        self.cur.execute(select_sql)
+        data = self.cur.fetchall()
+        return data
+
+    def get_nodes_weights(self):
+        select_sql = "SELECT t.user_id AS user_id, sum(t.quote_count) AS quotes, sum(t.reply_count) AS replies, sum(t.retweet_count) AS retweets FROM tweet t " \
+                     "WHERE t.user_id IN " + self.get_graph_nodes() + " GROUP BY t.user_id;"
+        self.cur.execute(select_sql)
+        data = self.cur.fetchall()
+        return data
+
+    def get_followers_weights(self):
+        select_sql = "SELECT u.id AS user_id, u.followers_count AS number FROM user u " \
+                     "WHERE u.id IN " + self.get_graph_nodes()
+        self.cur.execute(select_sql)
+        data = self.cur.fetchall()
+        return data
+
+    def get_usermentions_weights(self):
+        select_sql = "SELECT um.user_id AS user_id, count(*) AS number FROM user_mentions um " \
+                     "WHERE um.user_id IN " + self.get_graph_nodes() + " GROUP BY um.user_id;"
+        self.cur.execute(select_sql)
+        data = self.cur.fetchall()
+        return data
+
+    def get_retweet_edges(self):
+        select_sql = "SELECT DISTINCT  r.user_id AS user_A, t.user_id AS user_B FROM retweet r " \
+                     "JOIN tweet t on r.tweet_id = t.id " \
+                     "WHERE t.user_id <> r.user_id AND t.user_id IN " + self.get_graph_nodes() + " AND r.user_id IN " + self.get_graph_nodes()
+        self.cur.execute(select_sql)
+        data = self.cur.fetchall()
+        return data
+
+    def get_quote_edges(self):
+        select_sql = "SELECT DISTINCT t_o.user_id AS user_A, t_q.user_id AS user_B FROM tweet t_o " \
+                     "JOIN tweet t_q on t_q.quoted_status_id = t_o.id " \
+                     "WHERE t_o.user_id IN " + self.get_graph_nodes() + " AND t_q.user_id IN " + self.get_graph_nodes()
+        self.cur.execute(select_sql)
+        data = self.cur.fetchall()
+        return data
+
+    def get_tw_lang_per_day(self):
+        select_sql = "SELECT t.lang, DATE(t.created_at) AS date, count(*) AS number FROM tweet t " \
+                     "WHERE DATE(t.created_at) <> '2020-03-17' AND DATE(t.created_at) > '2020-03-07' " \
+                     "GROUP BY DATE (t.created_at), t.lang;"
+        self.cur.execute(select_sql)
+        data = self.cur.fetchall()
+
+        result = dict()
+        for row in data:
+            if row['lang'] not in result:
+                result[row['lang']] = dict()
+                result[row['lang']]['dates'] = []
+                result[row['lang']]['numbers'] = []
+
+            result[row['lang']]['dates'].append(datetime.strptime(row['date'], "%Y-%m-%d").date())
+            result[row['lang']]['numbers'].append(row['number'])
+        return result
+
+    def get_influencers_per_day(self):
+        select_sql = "SELECT u.screen_name, DATE(t.created_at) AS date, count(*) AS number, sum(t.retweet_count) AS retweet_count, sum(t.reply_count) AS reply_count, sum(t.quote_count) AS quote_count from tweet t " \
+                     "JOIN user u ON u.id = t.user_id " \
+                     "WHERE DATE(t.created_at) <> '2020-03-17' AND DATE(t.created_at) > '2020-03-07' AND u.screen_name in ('realDonaldTrump', 'BarackObama', 'WHO', 'MorawieckiM', 'Pontifex_es', 'UN', 'BorisJohnson', 'AndrzejDuda', 'PremierRP', 'MZ_GOV_PL', 'GIS_gov', 'GiuseppeConteIT', 'EmmanuelMacron', 'sanchezcastejon', 'GermanyDiplo') " \
+                     "GROUP BY DATE(t.created_at), t.user_id"
+        self.cur.execute(select_sql)
+        data = self.cur.fetchall()
+
+        result = dict()
+        for row in data:
+            if row['screen_name'] not in result:
+                result[row['screen_name']] = dict()
+                result[row['screen_name']]['dates'] = []
+                result[row['screen_name']]['numbers'] = []
+                result[row['screen_name']]['retweet_count'] = []
+                result[row['screen_name']]['reply_count'] = []
+                result[row['screen_name']]['quote_count'] = []
+
+            result[row['screen_name']]['dates'].append(datetime.strptime(row['date'], "%Y-%m-%d").date())
+            result[row['screen_name']]['numbers'].append(row['number'])
+            result[row['screen_name']]['retweet_count'].append(row['retweet_count'])
+            result[row['screen_name']]['reply_count'].append(row['reply_count'])
+            result[row['screen_name']]['quote_count'].append(row['quote_count'])
         return result
 
     def get_newly_created_accounts(self):
@@ -171,4 +273,3 @@ class DataSelector(DBManager):
         for row in data:
             result[row['created_at']] = row['number']
         return result
-
