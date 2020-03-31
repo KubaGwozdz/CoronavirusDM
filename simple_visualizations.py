@@ -169,6 +169,7 @@ def most_active_users_per_day_tweets(db):
     )
     return fig
 
+
 def newly_created_accounts(db):
     data = db.get_newly_created_accounts()
 
@@ -185,6 +186,7 @@ def newly_created_accounts(db):
         yaxis_title="number of new accounts"
     )
     return fig
+
 
 def newly_created_accounts_pattern(db):
     data = db.get_newly_created_accounts_pattern()
@@ -227,19 +229,27 @@ def tw_lang_per_day(db):
 def influencers_per_day(db):
     data = db.get_influencers_per_day()
     t_fig = go.Figure()
+    colors = ['#E74C3C', '#9B59B6' , '#2980B9', '#3498DB', '#1ABC9C',
+              '#16A085', '#27AE60', '#F1C40F', '#F39C12', '#E12FBD',
+              '#05E5F8', '#33F805', '#154EE8', '#941717', '#F49EE7']
+    i = 0
     for s_name in data.keys():
         t_fig.add_trace(
             go.Scatter(
                 x=data[s_name]['dates'],
                 y=data[s_name]['numbers'],
                 name=s_name,
+                line=dict(
+                    color=colors[i]
+                ),
                 opacity=0.8
             )
         )
+        i += 1
     t_fig.update_layout(
         title_text="Influencers' tweets per day",
         xaxis_title="date",
-        yaxis_title="number of tweets"
+        yaxis_title="number of tweets",
     )
     rtw_fig = go.Figure()
     for s_name in data.keys():
@@ -320,14 +330,14 @@ if __name__ == "__main__":
     # tw_lang_per_day_fig = tw_lang_per_day(db)
     # tw_lang_per_day_fig.show()
 
-    # inf_tw_per_day_fig, inf_rtw_per_day_fig, inf_rep_per_day_fig, inf_q_per_day_fig = influencers_per_day(db)
-    # inf_tw_per_day_fig.show()
-    # inf_rtw_per_day_fig.show()
-    # inf_rep_per_day_fig.show()
-    # inf_q_per_day_fig.show()
+    inf_tw_per_day_fig, inf_rtw_per_day_fig, inf_rep_per_day_fig, inf_q_per_day_fig = influencers_per_day(db)
+    inf_tw_per_day_fig.show()
+    inf_rtw_per_day_fig.show()
+    inf_rep_per_day_fig.show()
+    inf_q_per_day_fig.show()
 
-    newly_created_accounts_fig = newly_created_accounts(db)
-    newly_created_accounts_fig.show()
+    # newly_created_accounts_fig = newly_created_accounts(db)
+    # newly_created_accounts_fig.show()
 
-    newly_created_accounts_pattern_fig = newly_created_accounts_pattern(db)
-    newly_created_accounts_pattern_fig.show()
+    # newly_created_accounts_pattern_fig = newly_created_accounts_pattern(db)
+    # newly_created_accounts_pattern_fig.show()
