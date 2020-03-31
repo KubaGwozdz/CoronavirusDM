@@ -1,10 +1,11 @@
 import sqlite3
 from datetime import datetime
+from configuration import database_path
 
 
 class DBManager:
     def __init__(self):
-        self.connection = sqlite3.connect('./CoronavirusDB')
+        self.connection = sqlite3.connect(database_path)
         self.connection.row_factory = sqlite3.Row
         self.cur = self.connection.cursor()
 
