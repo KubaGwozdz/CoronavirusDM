@@ -13,3 +13,11 @@ def parse_file(filename):
         f.write("[" + s)
         s = f.read()
         f.write(']')
+
+
+
+# if __name__ == "__main__":
+    # parse_file('./data/retweets/25_3_2020retweets.json')
+
+
+

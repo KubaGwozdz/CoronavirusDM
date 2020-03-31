@@ -1,4 +1,4 @@
-from db_utils import DBManager
+from db_utils.db_manager import DBManager
 
 
 class DataInserter(DBManager):

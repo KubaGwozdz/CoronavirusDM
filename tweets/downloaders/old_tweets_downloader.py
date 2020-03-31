@@ -1,5 +1,5 @@
 import tweepy
-from tweets_downloader import CoronavirusListener, tracklist, access_token, access_token_secret, consumer_key, consumer_secret
+from tweets.downloaders.tweets_downloader import CoronavirusListener, tracklist, access_token, access_token_secret, consumer_key, consumer_secret
 import json
 
 # l = CoronavirusListener()

@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from data_selection import DataSelector
+from db_utils.data_selector import DataSelector
 import plotly.graph_objects as go
 
 

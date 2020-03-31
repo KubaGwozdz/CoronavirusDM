@@ -1,16 +1,9 @@
 import networkx as nx
 from networkx.algorithms import community
 
-from data_selection import DataSelector
-
-import numpy as np
-
-import matplotlib.pyplot as plt
-import matplotlib.colors as colors
+from db_utils.data_selector import DataSelector
 
 import plotly.graph_objects as go
-
-from math import log10
 
 
 def update_weight(u_id, to_add):

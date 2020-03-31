@@ -3,10 +3,9 @@ from tweepy import OAuthHandler
 from tweepy import Stream
 
 import json
-from datetime import datetime
 from dateutil.parser import parse
 
-from passwords import access_token, access_token_secret, consumer_key, consumer_secret
+from tweets.downloaders.passwords import access_token, access_token_secret, consumer_key, consumer_secret
 
 tracklist = ['#Coronvirus', '#COVID19', '#COVID_19', '#COVID-19', '#2019nCov', '#CoronaVirusUpdate', '#CoronaOutbreak',
              '#Coronavirus', '#Koronawirus']
