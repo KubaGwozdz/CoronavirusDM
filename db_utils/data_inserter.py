@@ -253,15 +253,28 @@ class DataInserter(DBManager):
         self.cur.executemany(update_sql, users)
         self.connection.commit()
 
-    def update_translated(self, translated):
+    def update_translate(self, translated):
         update_sql = "UPDATE tweet " \
                      "SET text_eng = ? " \
                      "WHERE id == ?"
-        vals = list(map(lambda translation: (
-            translation[0], translation[1]
-        ),translated))
 
-        self.cur.executemany(update_sql, vals)
+        self.cur.executemany(update_sql, translated)
+        self.connection.commit()
+
+    def update_sentiment(self, sentiments):
+        update_sql = "UPDATE tweet " \
+                     "SET sentiment = ? " \
+                     "WHERE id == ?"
+
+        self.cur.executemany(update_sql, sentiments)
+        self.connection.commit()
+
+    def update_translate_and_sentiment(self, data):
+        update_sql = "UPDATE tweet " \
+                     "SET text_eng = ?, sentiment = ? " \
+                     "WHERE id == ?"
+
+        self.cur.executemany(update_sql, data)
         self.connection.commit()
 
     def close_db(self):

@@ -302,8 +302,8 @@ def influencers_per_day(db):
 
 if __name__ == "__main__":
     db = DataSelector()
-    # tweets_per_day_fig = tweets_per_day(db)
-    # tweets_per_day_fig.show()
+    tweets_per_day_fig = tweets_per_day(db)
+    tweets_per_day_fig.show()
 
     # retweets_per_day_fig = retweets_per_day(db)
     # retweets_per_day_fig.show()
@@ -330,11 +330,11 @@ if __name__ == "__main__":
     # tw_lang_per_day_fig = tw_lang_per_day(db)
     # tw_lang_per_day_fig.show()
 
-    inf_tw_per_day_fig, inf_rtw_per_day_fig, inf_rep_per_day_fig, inf_q_per_day_fig = influencers_per_day(db)
-    inf_tw_per_day_fig.show()
-    inf_rtw_per_day_fig.show()
-    inf_rep_per_day_fig.show()
-    inf_q_per_day_fig.show()
+    # inf_tw_per_day_fig, inf_rtw_per_day_fig, inf_rep_per_day_fig, inf_q_per_day_fig = influencers_per_day(db)
+    # inf_tw_per_day_fig.show()
+    # inf_rtw_per_day_fig.show()
+    # inf_rep_per_day_fig.show()
+    # inf_q_per_day_fig.show()
 
     # newly_created_accounts_fig = newly_created_accounts(db)
     # newly_created_accounts_fig.show()
