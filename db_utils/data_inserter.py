@@ -253,5 +253,16 @@ class DataInserter(DBManager):
         self.cur.executemany(update_sql, users)
         self.connection.commit()
 
+    def update_translated(self, translated):
+        update_sql = "UPDATE tweet " \
+                     "SET text_eng = ? " \
+                     "WHERE id == ?"
+        vals = list(map(lambda translation: (
+            translation[0], translation[1]
+        ),translated))
+
+        self.cur.executemany(update_sql, vals)
+        self.connection.commit()
+
     def close_db(self):
         self.connection.close()

@@ -290,3 +290,15 @@ class DataSelector(DBManager):
         data = self.cur.fetchmany(batch_size)
         return data
 
+    def get_tweets_to_translate(self):
+        select_sql = "SELECT t.id, t.text FROM tweet t " \
+                     "WHERE t.text_eng isnull AND t.lang != 'en' AND t.lang != 'und' " \
+                     "AND t.created_at > '2020-03-07'" \
+                     "LIMIT 10"
+        self.cur.execute(select_sql)
+        data = self.cur.fetchall()
+
+        result = dict()
+        for row in data:
+            result[row['id']] = row['text']
+        return result
