@@ -4,10 +4,15 @@ from db_utils.db_manager import DBManager
 
 
 class DataSelector(DBManager):
-    def __init__(self):
-        super().__init__()
+    def __init__(self, manager=None):
+        if manager is None:
+            super().__init__()
+        else:
+            self.connection = manager.connection
+            self.cur = self.connection.cursor()
         self.graph_users = 500
         self.graph_nodes = []
+        self.is_executed = False
 
     def get_number_of_tweets_per_day(self):
         select_sql = "SELECT created_at , count(*) AS number FROM tweet " \
@@ -273,3 +278,15 @@ class DataSelector(DBManager):
         for row in data:
             result[row['created_at']] = row['number']
         return result
+
+    def get_users_to_localize(self, batch_size):
+        select_sql = "SELECT u.id, u.location FROM user u " \
+                     "WHERE u.country_code ISNULL AND u.location IS NOT NULL " \
+                     "ORDER BY u.followers_count DESC ;"
+        if not self.is_executed:
+            self.cur.execute(select_sql)
+            self.is_executed = True
+
+        data = self.cur.fetchmany(batch_size)
+        return data
+

@@ -2,8 +2,12 @@ from db_utils.db_manager import DBManager
 
 
 class DataInserter(DBManager):
-    def __init__(self):
-        super().__init__()
+    def __init__(self, manager=None):
+        if manager is None:
+            super().__init__()
+        else:
+            self.connection = manager.connection
+            self.cur = self.connection.cursor()
 
     def save_usermentions(self, tweet):
         um = tweet['user_mentions']
@@ -129,9 +133,9 @@ class DataInserter(DBManager):
         MAX_VARIABLES_NUMBER = 900
         if len(h) > MAX_VARIABLES_NUMBER:
             for i in range(0, len(h), MAX_VARIABLES_NUMBER):
-                questionmarks = '?' * len(h[i:i+MAX_VARIABLES_NUMBER])
+                questionmarks = '?' * len(h[i:i + MAX_VARIABLES_NUMBER])
                 select_h_sql = "SELECT id, text FROM hashtag WHERE text IN ({})".format(','.join(questionmarks))
-                self.cur.execute(select_h_sql, h[i:i+MAX_VARIABLES_NUMBER])
+                self.cur.execute(select_h_sql, h[i:i + MAX_VARIABLES_NUMBER])
                 tags = tags + self.cur.fetchall()
 
         else:
@@ -235,11 +239,18 @@ class DataInserter(DBManager):
                      " (id, user_id, tweet_id, created_at, reply_count, retweet_count, " \
                      "favorite_count, in_reply_to_status_id, in_reply_to_user_id) " \
                      "VALUES (?,?,?,?,?,?,?,?,?)"
-        vals = list(map(lambda retweet: (retweet['id'], retweet['user_id'], retweet['tweet_id'], self.parse_to_datetime(retweet['created_at']),
-                                         retweet['reply_count'], retweet['retweet_count'], retweet['favorite_count'],
-                                         retweet['in_reply_to_status_id'], retweet['in_reply_to_user_id']), retweets))
+        vals = list(map(lambda retweet: (
+            retweet['id'], retweet['user_id'], retweet['tweet_id'], self.parse_to_datetime(retweet['created_at']),
+            retweet['reply_count'], retweet['retweet_count'], retweet['favorite_count'],
+            retweet['in_reply_to_status_id'], retweet['in_reply_to_user_id']), retweets))
 
         self.cur.executemany(insert_sql, vals)
+        self.connection.commit()
+
+    def update_users_country_code(self, users):
+        update_sql = "UPDATE user SET country_code = ? WHERE id = ?"
+
+        self.cur.executemany(update_sql, users)
         self.connection.commit()
 
     def close_db(self):
