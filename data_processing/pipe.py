@@ -7,10 +7,10 @@ from db_utils.db_manager import DBManager
 
 
 class Worker(threading.Thread):
-    def __init__(self, id, users, pipe):
+    def __init__(self, id, data, pipe):
         threading.Thread.__init__(self)
         self.id = id
-        self.users = users
+        self.data = data
         self.pipe = pipe
 
     def run(self):
@@ -25,7 +25,7 @@ class Worker(threading.Thread):
 
         -------------------------
 
-        self.pipe.put_found_users(result)
+        self.pipe.put_done_data(result)
         print("Thread: " + str(self.id) + " finished")"""
         pass
 
@@ -94,7 +94,7 @@ class Pipe(threading.Thread):
             print("Localizing started")
 
             if len(worker_threads) > self.max_threads:
-                print('Too many to localize, waiting..')
+                print('Too many to process, waiting..')
                 for t in worker_threads[:-self.max_threads // 2]:
                     t.join()
                 print('Resuming...')
@@ -113,8 +113,8 @@ class Pipe(threading.Thread):
         print('Joining threads')
         for t in worker_threads:
             t.join()
-        print("All thread finished, inserting last users..")
+        print("All thread finished, inserting last..")
 
         while not self.done_data.empty():
-            self.db_insert.update_users_country_code(self.get_done_data())
+            self.db_insert.__getattribute__(self.insert_fun)(self.get_done_data())
         print('--- Everything added ---')
