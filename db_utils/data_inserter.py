@@ -277,5 +277,14 @@ class DataInserter(DBManager):
         self.cur.executemany(update_sql, data)
         self.connection.commit()
 
+    def insert_epidemic_data(self, data):
+        insert_sql = "INSERT INTO epidemic " \
+                     "(country, state, date, latitude, longitude, " \
+                     "confirmed, deaths, recovered, active) " \
+                     "VALUES (?,?,?,?,?,?,?,?,?)"
+
+        self.cur.executemany(insert_sql, data)
+        self.connection.commit()
+
     def close_db(self):
         self.connection.close()
