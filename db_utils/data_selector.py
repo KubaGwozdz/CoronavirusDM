@@ -1,4 +1,5 @@
 from datetime import datetime
+import country_converter as coco
 
 from db_utils.db_manager import DBManager
 
@@ -291,25 +292,67 @@ class DataSelector(DBManager):
         return data
 
     def get_tweets_to_translate(self, batch_size):
-        select_sql = "SELECT t.id, t.text FROM tweet t " \
-                     "WHERE t.text_eng isnull AND t.lang != 'en' AND t.lang != 'und' " \
-                     "AND t.created_at > '2020-03-07'" \
-                     "LIMIT 10"
+        select_sql = "SELECT t.id, t.text, t.lang FROM tweet t " \
+                     "JOIN user u on u.id = t.user_id " \
+                     "WHERE t.text_eng isnull AND t.lang != 'en' AND t.lang != 'und' AND t.lang = 'it' AND u.country_code IS NOT NULL AND t.sentiment_pol isnull AND t.sentiment_sub isnull " \
+                     "AND t.created_at > '2020-03-07'"
         if not self.is_executed:
             self.cur.execute(select_sql)
-            data = self.cur.fetchall()
+            self.is_executed = True
 
         data = self.cur.fetchmany(batch_size)
         return data
 
-    def get_tweets_to_analyse(self, batch_size):
+    def get_tweets_to_analyze(self, batch_size):
         select_sql = "SELECT t.id, t.text FROM tweet t " \
-                     "WHERE t.text_eng isnull AND t.lang == 'en' " \
-                     "AND t.created_at > '2020-03-07'" \
-                     "LIMIT 10"
+                     "JOIN user u on u.id = t.user_id " \
+                     "WHERE t.text_eng isnull AND t.lang == 'en' AND u.country_code IS NOT NULL AND t.sentiment_pol isnull AND t.sentiment_sub isnull " \
+                     "AND t.created_at > '2020-03-07'"
         if not self.is_executed:
             self.cur.execute(select_sql)
-            data = self.cur.fetchall()
+            self.is_executed = True
 
         data = self.cur.fetchmany(batch_size)
         return data
+
+    def get_tweets_per_country(self):
+        select_sql = "SELECT u.country_code, count(*) AS number FROM tweet t " \
+                     "JOIN user u on u.id = t.user_id " \
+                     "WHERE u.country_code IS NOT NULL AND u.country_code <> 'und' AND t.created_at > '2020-03-07' " \
+                     "GROUP BY u.country_code"
+        self.cur.execute(select_sql)
+        data = self.cur.fetchall()
+        result = dict()
+        result['country_code'] = []
+        result['country_name'] = []
+        result['number'] = []
+        for row in data:
+            cc = coco.convert(names=row['country_code'], to='ISO3')
+            cn = coco.convert(cc, to='name_short')
+            result['country_code'].append(cc)
+            result['country_name'].append(cn)
+            result['number'].append(row['number'])
+        return result
+
+    def get_sentiment_per_country(self):
+        select_sql = "SELECT u.country_code, avg(t.sentiment_pol) AS polarity, avg(t.sentiment_sub) AS subjectivity FROM tweet t " \
+                     "JOIN user u on u.id = t.user_id " \
+                     "WHERE u.country_code IS NOT NULL AND u.country_code <> 'und' AND t.created_at > '2020-03-07' " \
+                     "GROUP BY u.country_code"
+        self.cur.execute(select_sql)
+        data = self.cur.fetchall()
+        result = dict()
+        result['country_code'] = []
+        result['country_name'] = []
+        result['subjectivity'] = []
+        result['polarity'] = []
+        for row in data:
+            cc = coco.convert(names=row['country_code'], to='ISO3')
+            cn = coco.convert(cc, to='name_short')
+            result['country_code'].append(cc)
+            result['country_name'].append(cn)
+            result['subjectivity'].append(row['subjectivity'])
+            result['polarity'].append(row['polarity'])
+
+        return result
+

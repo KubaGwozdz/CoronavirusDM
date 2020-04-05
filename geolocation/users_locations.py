@@ -1,14 +1,10 @@
-import queue
 import time
 
 from geopy.geocoders import Nominatim, Photon
 from geopy.exc import GeocoderTimedOut, GeocoderQuotaExceeded
 
-import threading
-
 from db_utils.data_inserter import DataInserter
 from db_utils.data_selector import DataSelector
-from db_utils.db_manager import DBManager
 
 from data_processing.pipe import Pipe, Worker
 
@@ -32,7 +28,7 @@ class LocationsFinder(Worker):
 
     def run(self):
         result = []
-        for user in self.users:
+        for user in self.data:
             id = user['id']
             location_str = user['location']
             try:
