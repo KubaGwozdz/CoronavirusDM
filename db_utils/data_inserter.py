@@ -277,11 +277,41 @@ class DataInserter(DBManager):
         self.cur.executemany(update_sql, data)
         self.connection.commit()
 
-    def insert_epidemic_data(self, data):
-        insert_sql = "INSERT INTO epidemic " \
-                     "(country, state, date, latitude, longitude, " \
-                     "confirmed, deaths, recovered, active) " \
-                     "VALUES (?,?,?,?,?,?,?,?,?)"
+    def insert_covid19_data(self, data):
+        insert_sql = "INSERT INTO COVID19 " \
+                     "(country_id, date, " \
+                     "confirmed, deaths, recovered) " \
+                     "VALUES (?,?,?,?,?)"
+
+        self.cur.executemany(insert_sql, data)
+        self.connection.commit()
+
+    def insert_sars_data(self, data):
+        insert_sql = "INSERT INTO SARS " \
+                     "(country_id, date, " \
+                     "confirmed, deaths, recovered) " \
+                     "VALUES (?,?,?,?,?)"
+
+        self.cur.executemany(insert_sql, data)
+        self.connection.commit()
+
+    def insert_country(self, countries):
+
+        insert_c_sql = "INSERT OR IGNORE INTO country (name,iso3,state,population) VALUES (?,?,?,?)"
+
+        self.cur.executemany(insert_c_sql, countries)
+        self.connection.commit()
+
+        countries_names = [row[0] for row in countries]
+
+        questionmarks = '?' * len(countries_names)
+        select_c_sql = "SELECT id, name, state FROM country WHERE name IN ({})".format(','.join(questionmarks))
+        self.cur.execute(select_c_sql, countries_names)
+        return self.cur.fetchall()
+
+    def update_country_population(self, data):
+
+        insert_sql = 'UPDATE country SET population = ?, density = ? WHERE id == ?'
 
         self.cur.executemany(insert_sql, data)
         self.connection.commit()

@@ -1,5 +1,4 @@
 from datetime import datetime
-import country_converter as coco
 
 from db_utils.db_manager import DBManager
 
@@ -354,5 +353,9 @@ class DataSelector(DBManager):
             result['subjectivity'].append(row['subjectivity'])
             result['polarity'].append(row['polarity'])
 
-        return result
+    def get_countries(self):
+        select_sql = "SELECT id, name FROM country WHERE state == ''"
+        self.cur.execute(select_sql)
+        result = self.cur.fetchall()
 
+        return result
