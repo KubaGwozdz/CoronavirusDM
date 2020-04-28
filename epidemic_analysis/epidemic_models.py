@@ -5,7 +5,7 @@ I - infectious
 R - recovered with immunity
 E - exposed, infected but not infectious, N - (S+I+R)
 D - deceased
-M - newborn immune for the first few months
+M - newborns, immune for the first few months
 
 gamma - recover rate
 beta - infection rate
@@ -49,6 +49,7 @@ class SEIR: # from S to E and possibly to I then R and never back - immunity
 class SEIS: # like SEIR but without immunity
 
     def __init__(self, S, E, I, N, gamma, beta, mi, alpha):
+
         self.dSdt = mi * N - mi * S - beta * (I / N) * S
         self.dEdt = beta * (I / N) * S - (mi + alpha) * E
         self.dIdt = alpha * E - (gamma + mi) * I
