@@ -30,7 +30,7 @@ def parse_date(date):
 def get_iso3_country(country):
     iso3_country = None
 
-    with open('../data/Covid-19-data/csse_covid_19_data/UID_ISO_FIPS_LookUp_Table.csv') as csv_file:
+    with open('/Users/juliazur/Documents/AGH/8semestr/ED/project/Covid-19-data/csse_covid_19_data/UID_ISO_FIPS_LookUp_Table.csv') as csv_file:
 
         reader = csv.reader(csv_file, delimiter=',')
         data = []
@@ -84,10 +84,13 @@ def insert_get_countries(global_conf, us_deaths):
 
 
 def parse_csv_files(path_global_conf, path_global_deaths, path_us_conf, path_us_deaths, path_global_recov,
-                    starting_date=None):
+                    date_global=None, date_us=None):
 
-    if starting_date is None:
-        starting_date = '1/22/20'
+    if date_global is None:
+        date_global = 4
+
+    if date_us is None:
+        date_us = 11
 
     with open(path_global_conf) as csv_file:
 
@@ -139,10 +142,7 @@ def parse_csv_files(path_global_conf, path_global_deaths, path_us_conf, path_us_
 
             country_id = [row[0] for row in countries_data if row[1] == country][0]
 
-            date_row = global_conf[0]
-            starting_date_index = date_row.index(starting_date)
-
-            for i in range(starting_date_index, len(global_conf[0])):
+            for i in range(date_global, len(global_conf[0])):
                 date = global_conf[0][i]
 
                 tmp = [c for c in global_conf if c[1] == country]
@@ -175,10 +175,7 @@ def parse_csv_files(path_global_conf, path_global_deaths, path_us_conf, path_us_
 
             country_id = [row[0] for row in countries_data if row[1] == country][0]
 
-            date_row = global_deaths[0]
-            starting_date_index = date_row.index(starting_date)
-
-            for i in range(starting_date_index, len(global_deaths[0])):
+            for i in range(date_global, len(global_deaths[0])):
 
                 date = global_deaths[0][i]
 
@@ -212,10 +209,7 @@ def parse_csv_files(path_global_conf, path_global_deaths, path_us_conf, path_us_
 
             country_id = [row[0] for row in countries_data if row[1] == country][0]
 
-            date_row = global_recov[0]
-            starting_date_index = date_row.index(starting_date)
-
-            for i in range(starting_date_index, len(global_recov[0])):
+            for i in range(date_global, len(global_recov[0])):
 
                 date = global_recov[0][i]
 
@@ -255,10 +249,7 @@ def parse_csv_files(path_global_conf, path_global_deaths, path_us_conf, path_us_
 
             country_id = [row[0] for row in countries_data if row[2] == state_code][0]
 
-            date_row = us_conf[0]
-            starting_date_index = date_row.index(starting_date)
-
-            for i in range(starting_date_index, len(us_conf[0])):
+            for i in range(date_us, len(us_conf[0])):
 
                 date = us_conf[0][i]
 
@@ -296,10 +287,7 @@ def parse_csv_files(path_global_conf, path_global_deaths, path_us_conf, path_us_
 
             country_id = [row[0] for row in countries_data if row[2] == state_code][0]
 
-            date_row = us_deaths[0]
-            starting_date_index = date_row.index(starting_date)
-
-            for i in range(starting_date_index, len(us_deaths[0])):
+            for i in range(date_us+1, len(us_deaths[0])):
 
                 date = us_deaths[0][i]
 
@@ -334,14 +322,13 @@ if __name__ == "__main__":
 
      data_inserter = DataInserter()
 
-     directory = '../data/Covid-19-data/csse_covid_19_data/csse_covid_19_time_series'
+     directory = '../Covid-19-data/csse_covid_19_data/csse_covid_19_time_series'
      path_global_conf_file = directory + '/' + 'time_series_covid19_confirmed_global.csv'
      path_global_deaths_file = directory + '/' + 'time_series_covid19_deaths_global.csv'
      path_us_conf_file = directory + '/' + 'time_series_covid19_confirmed_US.csv'
      path_us_deaths_file = directory + '/' + 'time_series_covid19_deaths_US.csv'
      path_global_recov_file = directory + '/' + 'time_series_covid19_recovered_global.csv'
 
-     data = parse_csv_files(path_global_conf_file, path_global_deaths_file, path_us_conf_file, path_us_deaths_file,
-                            path_global_recov_file, '4/24/20') # bez starting date = wszystkie, data='no-zero-month/day/last-two-numbers-year'
+     data = parse_csv_files(path_global_conf_file, path_global_deaths_file, path_us_conf_file, path_us_deaths_file, path_global_recov_file, 96, 103) # bez starting date = wszystkie
      # print(data)
      # data_inserter.insert_covid19_data(data)
