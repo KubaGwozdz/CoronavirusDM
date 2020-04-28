@@ -1,7 +1,7 @@
 import csv
 from db_utils.data_inserter import DataInserter
 import datetime
-from pp_analysis import covid19_data_downloader
+from epidemic_analysis import covid19_data_downloader
 
 
 def parse_date(date):
@@ -88,7 +88,7 @@ if __name__ == "__main__":
 
      data_inserter = DataInserter()
 
-     directory = '../SARS-03-data'
+     directory = '../data/SARS-03-data'
      file_path = directory + '/' + 'sars_2003_complete_dataset_clean.csv'
 
      data = parse_csv_files(file_path)

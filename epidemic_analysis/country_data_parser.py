@@ -36,7 +36,7 @@ if __name__ == '__main__':
 
     data_inserter = DataInserter()
 
-    directory = '../country_data'
+    directory = '../data/country_data'
     file_path = directory + '/' + 'population_by_country_2020.csv'
 
     data = get_country_population_density(file_path)
