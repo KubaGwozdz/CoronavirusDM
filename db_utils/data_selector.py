@@ -1,4 +1,8 @@
 from datetime import datetime
+from datetime import timedelta
+
+import country_converter as coco
+import geolocation.us_states as states_mapper
 
 from db_utils.db_manager import DBManager
 
@@ -293,7 +297,7 @@ class DataSelector(DBManager):
     def get_tweets_to_translate(self, batch_size):
         select_sql = "SELECT t.id, t.text, t.lang FROM tweet t " \
                      "JOIN user u on u.id = t.user_id " \
-                     "WHERE t.text_eng isnull AND t.lang != 'en' AND t.lang != 'und' AND t.lang = 'it' AND u.country_code IS NOT NULL AND t.sentiment_pol isnull AND t.sentiment_sub isnull " \
+                     "WHERE t.text_eng isnull AND t.lang != 'en' AND t.lang != 'und' AND t.lang IN ('it', 'pl') AND u.country_code IS NOT NULL AND t.sentiment_pol isnull " \
                      "AND t.created_at > '2020-03-07'"
         if not self.is_executed:
             self.cur.execute(select_sql)
@@ -305,8 +309,9 @@ class DataSelector(DBManager):
     def get_tweets_to_analyze(self, batch_size):
         select_sql = "SELECT t.id, t.text FROM tweet t " \
                      "JOIN user u on u.id = t.user_id " \
-                     "WHERE t.text_eng isnull AND t.lang == 'en' AND u.country_code IS NOT NULL AND t.sentiment_pol isnull AND t.sentiment_sub isnull " \
+                     "WHERE t.text_eng isnull AND t.lang == 'en' AND u.country_code IS NOT NULL AND t.sentiment_pol isnull " \
                      "AND t.created_at > '2020-03-07'"
+
         if not self.is_executed:
             self.cur.execute(select_sql)
             self.is_executed = True
@@ -333,29 +338,97 @@ class DataSelector(DBManager):
             result['number'].append(row['number'])
         return result
 
-    def get_sentiment_per_country(self):
-        select_sql = "SELECT u.country_code, avg(t.sentiment_pol) AS polarity, avg(t.sentiment_sub) AS subjectivity FROM tweet t " \
+    def get_sentiment_per_country(self, to_date=None):
+        if to_date is None:
+            to_date = self.today
+        else:
+            to_date = self.parse_datetime_to_date(to_date)
+        select_sql = "SELECT u.country_code, avg(t.sentiment_pol) AS polarity FROM tweet t " \
                      "JOIN user u on u.id = t.user_id " \
-                     "WHERE u.country_code IS NOT NULL AND u.country_code <> 'und' AND t.created_at > '2020-03-07' " \
+                     "WHERE u.country_code IS NOT NULL AND u.country_code <> 'und' AND t.created_at > '2020-03-07' AND t.created_at <= '" + to_date + "' " \
                      "GROUP BY u.country_code"
         self.cur.execute(select_sql)
         data = self.cur.fetchall()
         result = dict()
         result['country_code'] = []
         result['country_name'] = []
-        result['subjectivity'] = []
         result['polarity'] = []
         for row in data:
             cc = coco.convert(names=row['country_code'], to='ISO3')
             cn = coco.convert(cc, to='name_short')
             result['country_code'].append(cc)
             result['country_name'].append(cn)
-            result['subjectivity'].append(row['subjectivity'])
+            result['polarity'].append(row['polarity'])
+
+        return result
+
+    def get_sentiment_per_state(self, to_date=None):
+        if to_date is None:
+            to_date = self.today
+        else:
+            to_date = self.parse_datetime_to_date(to_date)
+
+        select_sql = "SELECT u.state_code, avg(t.sentiment_pol) AS polarity FROM tweet t " \
+                     "JOIN user u on u.id = t.user_id " \
+                     "WHERE u.country_code IS NOT NULL AND u.country_code = 'us' AND t.created_at > '2020-03-07' AND t.created_at <= '" + to_date + "' " \
+                     "GROUP BY u.state_code"
+        self.cur.execute(select_sql)
+        data = self.cur.fetchall()
+        result = dict()
+        result['state_code'] = []
+        result['state_name'] = []
+        result['polarity'] = []
+        for row in data:
+            sc = row['state_code']
+            sn = states_mapper.code_to_state(row['state_code'])
+            result['state_code'].append(sc)
+            result['state_name'].append(sn)
             result['polarity'].append(row['polarity'])
 
     def get_countries(self):
         select_sql = "SELECT id, name FROM country WHERE state == ''"
         self.cur.execute(select_sql)
         result = self.cur.fetchall()
-
         return result
+
+    def get_country_id(self, country_name: str):
+        select_sql = "SELECT id FROM country c WHERE c.state == '' AND c.name == '" + country_name + "' "
+        self.cur.execute(select_sql)
+        result = self.cur.fetchone()[0]
+        return result
+
+    def get_epidemic_data_in(self, countries_names: list, columns: list, epidemic_name: str, to_date=None):
+        if to_date is None:
+            to_date = self.today
+        else:
+            to_date = self.parse_datetime_to_date(to_date)
+
+
+        columns_str = ', '.join(columns)
+        countries_str = ', '.join(list(map(lambda country: "'"+country+"'", countries_names)))
+
+
+        select_sql = "SELECT c.name AS country_name, e.date, " + columns_str + " FROM " + epidemic_name +" e " \
+                       "JOIN COUNTRY c on c.id = e.country_id " \
+                     "WHERE c.name in (" + countries_str + ") AND date <= '" + to_date + "' " \
+                     "ORDER BY e.date ASC"
+
+        self.cur.execute(select_sql)
+        raw_data = self.cur.fetchall()
+
+        data = dict()
+        data['dates'] = []
+        for country_name in countries_names:
+            data[country_name] = dict()
+            for column in columns:
+                data[country_name][column] = []
+
+        for row in raw_data:
+            if row['date'] not in data['dates']:
+                data['dates'].append(row['date'])
+            for column in columns:
+                data[row['country_name']][column].append(row[column])
+        return data
+
+
+

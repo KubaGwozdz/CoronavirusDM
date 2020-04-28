@@ -248,7 +248,7 @@ class DataInserter(DBManager):
         self.connection.commit()
 
     def update_users_country_code(self, users):
-        update_sql = "UPDATE user SET country_code = ? WHERE id = ?"
+        update_sql = "UPDATE user SET country_code = ?, state_code = ? WHERE id = ?"
 
         self.cur.executemany(update_sql, users)
         self.connection.commit()
@@ -263,7 +263,7 @@ class DataInserter(DBManager):
 
     def update_sentiment(self, sentiments):
         update_sql = "UPDATE tweet " \
-                     "SET sentiment_pol = ?, sentiment_sub = ? " \
+                     "SET sentiment_pol = ? " \
                      "WHERE id == ?"
 
         self.cur.executemany(update_sql, sentiments)
@@ -271,7 +271,7 @@ class DataInserter(DBManager):
 
     def update_translate_and_sentiment(self, data):
         update_sql = "UPDATE tweet " \
-                     "SET text_eng = ?, sentiment_pol = ? , sentiment_sub = ? " \
+                     "SET text_eng = ?, sentiment_pol = ? " \
                      "WHERE id == ?"
 
         self.cur.executemany(update_sql, data)

@@ -31,11 +31,12 @@ class Worker(threading.Thread):
 
 
 class Pipe(threading.Thread):
-    def __init__(self, select_fun, insert_fun, worker_class):
+    def __init__(self, select_fun, insert_fun, worker_class, lock=threading.Lock(), db_m=DBManager()):
         threading.Thread.__init__(self)
         self.new_data = queue.Queue()
         self.done_data = queue.Queue()
-        self.db_m = DBManager()
+        self.db_m = db_m
+        self._db_access = lock
         self.db_insert = DataInserter(self.db_m)
         self.db_select = DataSelector(self.db_m)
         self.num_loc_threads = 2
@@ -49,7 +50,7 @@ class Pipe(threading.Thread):
     def get_new_data(self):
         batch = []
         it = 0
-        while it < 100 and not self.new_data.empty():
+        while it < self.batch_size and not self.new_data.empty():
             batch.append(self.new_data.get())
             it += 1
         return batch
@@ -70,12 +71,16 @@ class Pipe(threading.Thread):
         for d in data:
             self.done_data.put(d)
 
+    def stop(self):
+        self.quota_exceeded = True
+
     def run(self):
         worker_threads = []
         epoch_count = 0
-        select_scale = 10
+        select_scale = 5
 
-        new_data = self.db_select.__getattribute__(self.select_fun)(self.batch_size * select_scale)
+        with self._db_access:
+            new_data = self.db_select.__getattribute__(self.select_fun)(self.batch_size * select_scale)
         print('Data selected')
         self.put_new_data(new_data)
         thread_id = 0
@@ -91,7 +96,7 @@ class Pipe(threading.Thread):
                 worker_threads.append(thread)
                 thread_id += 1
 
-            print("Localizing started")
+            print("Processing started")
 
             if len(worker_threads) > self.max_threads:
                 print('Too many to process, waiting..')
@@ -101,10 +106,13 @@ class Pipe(threading.Thread):
 
             print("Inserting started")
             print("Data to insert: " + str(self.done_data.qsize()))
-            while not self.done_data.empty():
-                self.db_insert.__getattribute__(self.insert_fun)(self.get_done_data())
+            if not self.done_data.empty():
+                with self._db_access:
+                    while not self.done_data.empty():
+                        self.db_insert.__getattribute__(self.insert_fun)(self.get_done_data())
 
-            new_data = self.db_select.__getattribute__(self.select_fun)(self.batch_size * select_scale)
+            with self._db_access:
+                new_data = self.db_select.__getattribute__(self.select_fun)(self.batch_size * select_scale)
             print('New data selected')
             self.put_new_data(new_data)
             epoch_count += 1
@@ -115,6 +123,38 @@ class Pipe(threading.Thread):
             t.join()
         print("All thread finished, inserting last..")
 
-        while not self.done_data.empty():
-            self.db_insert.__getattribute__(self.insert_fun)(self.get_done_data())
+        if not self.done_data.empty():
+            with self._db_access:
+                while not self.done_data.empty():
+                    self.db_insert.__getattribute__(self.insert_fun)(self.get_done_data())
+        print('--- Everything added ---')
+
+    def run_one(self):
+        epoch_count = 0
+
+        with self._db_access:
+            new_data = self.db_select.__getattribute__(self.select_fun)(self.batch_size)
+        print('Data selected')
+        self.put_new_data(new_data)
+
+        while not self.new_data.empty() and not self.quota_exceeded:
+            print("----- Beginning " + str(epoch_count) + " epoch -----")
+            print(self.quota_exceeded)
+
+            worker = self.worker_class(1, self.get_new_data(), self)
+            worker.start()
+            print("Processing started")
+            worker.join()
+            print("Data to insert: " + str(self.done_data.qsize()))
+            with self._db_access:
+                self.db_insert.__getattribute__(self.insert_fun)(self.get_done_data())
+                new_data = self.db_select.__getattribute__(self.select_fun)(self.batch_size)
+            print('New data selected')
+            self.put_new_data(new_data)
+            epoch_count += 1
+
+        if not self.done_data.empty():
+            with self._db_access:
+                while not self.done_data.empty():
+                    self.db_insert.__getattribute__(self.insert_fun)(self.get_done_data())
         print('--- Everything added ---')

@@ -64,10 +64,10 @@ def state_to_code(name):
     if name in us_states.keys():
         return us_states[name]
     else:
-        return 'und'
+        return None
 
 def code_to_state(name):
     if name in us_states_reversed.keys():
         return us_states_reversed[name]
     else:
-        return 'und'
+        return None

@@ -1,3 +1,5 @@
+from datetime import datetime
+
 import plotly.graph_objects as go
 
 from db_utils.data_selector import DataSelector
@@ -28,52 +30,69 @@ def tweets_per_country(db):
     )
     return fig
 
+
 def sentiment_per_country(db):
-    data = db.get_sentiment_per_country()
+    data = db.get_sentiment_per_country(to_date=datetime.today())
     polarity_fig = go.Figure(data=go.Choropleth(
         locations=data['country_code'],
         locationmode='ISO-3',
         z=data['polarity'],
         text=data['country_name'],
-        # colorscale='Blues',
-        autocolorscale=True,
-        # reversescale=True,
+        colorscale='RdYlGn',
+        autocolorscale=False,
         marker_line_color='darkgray',
         marker_line_width=0.5,
         colorbar_title='Tweet polarity: 1 - positive, -1 - negative',
     ))
 
     polarity_fig.update_layout(
-        title_text='Social mood in tweets per country',
+        title_text='Social mood in tweets per country for March 2020',
         geo=dict(
             showframe=False,
             showcoastlines=False,
             projection_type='equirectangular'
         )
     )
+    polarity_fig.update_layout(
+        geo=go.layout.Geo(
+            # range_color=(-1, 1)
+        )
+    )
 
-    subjectivity_fig = go.Figure(data=go.Choropleth(
-        locations=data['country_code'],
-        locationmode='ISO-3',
-        z=data['subjectivity'],
-        text=data['country_name'],
-        # colorscale='Blues',
-        autocolorscale=True,
-        # reversescale=True,
+    return polarity_fig
+
+
+def sentiment_per_state(db):
+    data = db.get_sentiment_per_state(to_date=datetime.today())
+    polarity_fig = go.Figure(data=go.Choropleth(
+        locations=data['state_code'],
+        locationmode='USA-states',
+        z=data['polarity'],
+        text=data['state_name'],
+        colorscale='RdYlGn',
+        autocolorscale=False,
         marker_line_color='darkgray',
         marker_line_width=0.5,
-        colorbar_title='Tweet polarity: 1 - subjective, 0 - objective',
+        colorbar_title='Tweet polarity: 1 - positive, -1 - negative',
     ))
 
-    subjectivity_fig.update_layout(
-        title_text='Social mood in tweets per country',
+    polarity_fig.update_layout(
+        title_text='Social mood in tweets per state for march 2020',
         geo=dict(
             showframe=False,
             showcoastlines=False,
             projection_type='equirectangular'
         )
     )
-    return polarity_fig, subjectivity_fig
+    polarity_fig.update_layout(
+        geo=go.layout.Geo(
+            scope='usa',
+            # range_color=(-1, 1)
+        )
+    )
+
+    return polarity_fig
+
 
 if __name__ == "__main__":
     db = DataSelector()
@@ -81,6 +100,8 @@ if __name__ == "__main__":
     # tweets_per_country_fig = tweets_per_country(db)
     # tweets_per_country_fig.show()
 
-    polarity_fig, subjectivity_fig = sentiment_per_country(db)
+    polarity_fig = sentiment_per_country(db)
     polarity_fig.show()
-    subjectivity_fig.show()
+
+    polarity_USA_fig = sentiment_per_state(db)
+    polarity_USA_fig.show()

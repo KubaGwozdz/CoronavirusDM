@@ -229,9 +229,9 @@ def tw_lang_per_day(db):
 def influencers_per_day(db):
     data = db.get_influencers_per_day()
     t_fig = go.Figure()
-    colors = ['#E74C3C', '#9B59B6' , '#2980B9', '#3498DB', '#1ABC9C',
-              '#16A085', '#27AE60', '#F1C40F', '#F39C12', '#E12FBD',
-              '#05E5F8', '#33F805', '#154EE8', '#941717', '#F49EE7']
+    colors = ['#F39C12', '#E12FBD', '#9E3D64', '#9D22E3', '#F1C40F',
+              '#05E5F8', '#E74C3C', '#5F287F', '#6593F5', '#4F820D',
+              '#33F805', '#1AB394', '#154EE8' '#2D383C', '#B19CD9']
     i = 0
     for s_name in data.keys():
         t_fig.add_trace(
@@ -302,9 +302,9 @@ def influencers_per_day(db):
 
 if __name__ == "__main__":
     db = DataSelector()
-    tweets_per_day_fig = tweets_per_day(db)
-    tweets_per_day_fig.show()
-
+    # tweets_per_day_fig = tweets_per_day(db)
+    # tweets_per_day_fig.show()
+    #
     # retweets_per_day_fig = retweets_per_day(db)
     # retweets_per_day_fig.show()
 
@@ -330,11 +330,11 @@ if __name__ == "__main__":
     # tw_lang_per_day_fig = tw_lang_per_day(db)
     # tw_lang_per_day_fig.show()
 
-    # inf_tw_per_day_fig, inf_rtw_per_day_fig, inf_rep_per_day_fig, inf_q_per_day_fig = influencers_per_day(db)
-    # inf_tw_per_day_fig.show()
-    # inf_rtw_per_day_fig.show()
-    # inf_rep_per_day_fig.show()
-    # inf_q_per_day_fig.show()
+    inf_tw_per_day_fig, inf_rtw_per_day_fig, inf_rep_per_day_fig, inf_q_per_day_fig = influencers_per_day(db)
+    inf_tw_per_day_fig.show()
+    inf_rtw_per_day_fig.show()
+    inf_rep_per_day_fig.show()
+    inf_q_per_day_fig.show()
 
     # newly_created_accounts_fig = newly_created_accounts(db)
     # newly_created_accounts_fig.show()

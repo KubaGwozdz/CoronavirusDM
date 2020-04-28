@@ -5,7 +5,7 @@ from data_processing.pipe import Pipe, Worker
 
 from data_processing.preprocessors import TweetsPreprocessor
 
-from textblob import TextBlob
+from vaderSentiment.vaderSentiment import SentimentIntensityAnalyzer
 
 
 class SentimentAnalyzer(Worker):
@@ -17,23 +17,26 @@ class SentimentAnalyzer(Worker):
         preprocessor = TweetsPreprocessor()
         for tweet in self.data:
             preprocessed = preprocessor.process_tweet(tweet['text'])
-            analysis = TextBlob(preprocessed)
-            """
-                subjectivity -> [0,1]
-                    0.0: very objective
-                    1.0: very subjective
-                
+            analyzer = SentimentIntensityAnalyzer()
+            pol = analyzer.polarity_scores(preprocessed)['compound']
+            """ 
                 polarity -> [-1,1]
                     1.0: positive
                     -1.0: negative
             """
-            result.append((analysis.polarity, analysis.subjectivity, tweet['id']))
+            result.append((pol, tweet['id']))
         self.pipe.put_done_data(result)
 
 
 class SentimentPipe(Pipe):
-    def __init__(self):
-        super().__init__(DataSelector.get_tweets_to_analyze, DataInserter.update_sentiment, SentimentAnalyzer)
+    def __init__(self, **kwargs):
+        if 'lock' in kwargs and 'db_m' in kwargs:
+            l = kwargs['lock']
+            d = kwargs['db_m']
+            super().__init__(DataSelector.get_tweets_to_analyze, DataInserter.update_sentiment, SentimentAnalyzer,
+                             lock=l, db_m=d)
+        else:
+            super().__init__(DataSelector.get_tweets_to_analyze, DataInserter.update_sentiment, SentimentAnalyzer)
         self.batch_size = 1000
         self.max_threads = 10
 
