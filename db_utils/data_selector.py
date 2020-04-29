@@ -399,7 +399,7 @@ class DataSelector(DBManager):
     def get_countries_populations(self, countries_names):
         countries_names_str = ', '.join(list(map(lambda country: "'"+country+"'", countries_names)))
 
-        select_sql = "SELECT c.name AS country_name, c.population FROM country WHERE c.name in ( "+ countries_names_str +" )"
+        select_sql = "SELECT c.name AS country_name, c.population FROM country c WHERE c.name in ( "+ countries_names_str +" )"
         self.cur.execute(select_sql)
         data = self.cur.fetchall()
         result = dict()
