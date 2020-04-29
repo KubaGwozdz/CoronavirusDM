@@ -67,6 +67,7 @@ class SIR(EpidemicModel):  # from I to R and never back to S
         self.r_0 = r_0
         self.beta = beta
         self.gamma = gamma
+        self.N = data[country_name]['population']
 
     @staticmethod
     def model(beta, gamma, t, y):

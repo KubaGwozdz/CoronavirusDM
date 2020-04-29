@@ -396,8 +396,16 @@ class DataSelector(DBManager):
         result = self.cur.fetchone()[0]
         return result
 
-    def get_countries_populations(self, coutries_names):
-        return 0
+    def get_countries_populations(self, countries_names):
+        countries_names_str = ', '.join(list(map(lambda country: "'"+country+"'", countries_names)))
+
+        select_sql = "SELECT c.name AS country_name, c.population FROM country WHERE c.name in ( "+ countries_names_str +" )"
+        self.cur.execute(select_sql)
+        data = self.cur.fetchall()
+        result = dict()
+        for row in data:
+            result[row['country_name']] = row['population']
+        return result
 
     def get_epidemic_data_in(self, countries_names: list, columns: list, epidemic_name: str, to_date=None):
         if to_date is None:
@@ -420,9 +428,10 @@ class DataSelector(DBManager):
 
         data = dict()
         data['dates'] = []
+        population = self.get_countries_populations(countries_names)
         for country_name in countries_names:
             data[country_name] = dict()
-            data[country_name]
+            data[country_name]['population'] = population[country_name]
             for column in columns:
                 data[country_name][column] = []
 
