@@ -1,5 +1,4 @@
 from datetime import datetime
-from datetime import timedelta
 
 import country_converter as coco
 import geolocation.us_states as states_mapper
@@ -397,6 +396,9 @@ class DataSelector(DBManager):
         result = self.cur.fetchone()[0]
         return result
 
+    def get_countries_populations(self, coutries_names):
+        return 0
+
     def get_epidemic_data_in(self, countries_names: list, columns: list, epidemic_name: str, to_date=None):
         if to_date is None:
             to_date = self.today
@@ -420,6 +422,7 @@ class DataSelector(DBManager):
         data['dates'] = []
         for country_name in countries_names:
             data[country_name] = dict()
+            data[country_name]
             for column in columns:
                 data[country_name][column] = []
 

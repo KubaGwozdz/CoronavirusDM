@@ -1,6 +1,7 @@
 import plotly.graph_objects as go
 
 from db_utils.data_selector import DataSelector
+from epidemic_analysis.epidemic_models import SIR
 
 
 def affected_in(countries_names: list, columns: list, virus_name, db):
@@ -17,6 +18,18 @@ def affected_in(countries_names: list, columns: list, virus_name, db):
     )
     return fig
 
+def predicted_in(country_name, virus_name, db):
+    model = SIR(100000, 2 ,0, country_name, db, virus_name, 20, beta=0.00001713, gamma=0.01414756)
+    prediction, susceptible, infected, recovered = model.predict()
+    fig = go.Figure()
+    fig.add_trace(go.Scatter(x=model.timeline,
+                             y=infected,
+                             mode='lines'
+                                  ''))
+    return fig
+
+
+
 
 
 if __name__ == "__main__":
@@ -24,5 +37,7 @@ if __name__ == "__main__":
 
     # ------ COVID19 ------
 
-    c19_infected_in_POL_fig = affected_in(["Poland", "Italy"], ["deaths", 'confirmed'], "COVID19", db)
-    c19_infected_in_POL_fig.show()
+    # c19_infected_in_POL_fig = affected_in(["Poland", "Italy"], ["deaths", 'confirmed'], "COVID19", db)
+    # c19_infected_in_POL_fig.show()
+    predictction_fig = predicted_in("Italy", "COVID19", db)
+    predictction_fig.show()
