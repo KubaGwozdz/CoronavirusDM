@@ -67,21 +67,24 @@ class DataSelector(DBManager):
 
         return result
 
-    def get_most_popular_hashtags(self):
+    def get_most_popular_hashtags(self, from_date=None, to_date=None):
+        from_date, to_date = self.parse_from_to_date(from_date, to_date)
+
         select_sql = "SELECT h.text, count(*) AS number from hashtag AS h " \
                      "JOIN hashtag_tweet ht on h.id = ht.hashtag_id " \
-                     "WHERE ht.hashtag_id in (SELECT hashtag_id FROM  hashtag_tweet " \
-                     "GROUP BY hashtag_id " \
+                     "WHERE ht.hashtag_id in (SELECT hashtag_id FROM  hashtag_tweet ht " \
+                     "JOIN tweet t on t.id = ht.tweet_id " \
+                     "WHERE t.created_at >= '"+from_date+"' AND t.created_ad <= '"+to_date+"' " \
+                     "GROUP BY ht.hashtag_id " \
                      "ORDER BY count(*) DESC " \
                      "LIMIT 10) " \
-                     "GROUP BY ht.hashtag_id"
+                     "GROUP BY ht.hashtag_id ORDER BY number DESC"
 
         self.cur.execute(select_sql)
         data = self.cur.fetchall()
         result = dict()
         for row in data:
             result[row['text']] = row['number']
-        print(result)
         return result
 
     def get_most_popular_users_followers(self):
@@ -104,10 +107,13 @@ class DataSelector(DBManager):
             result[row['screen_name']] = row['friends_count']
         return result
 
-    def get_most_active_users(self):
+    def get_most_active_users(self, from_date=None, to_date=None):
+        from_date, to_date = self.parse_from_to_date(from_date, to_date)
+
+
         select_sql = "SELECT u.screen_name, count(*) AS number FROM tweet t " \
                      "JOIN user u on t.user_id = u.id " \
-                     "WHERE t.created_at > '2020-03-07' " \
+                     "WHERE t.created_at >= '" + from_date + "' AND t.created_at <= '" + to_date + "' " \
                      "GROUP BY t.user_id " \
                      "ORDER BY count(*) DESC " \
                      "LIMIT 10"
@@ -118,10 +124,12 @@ class DataSelector(DBManager):
             result[row['screen_name']] = row['number']
         return result
 
-    def get_most_active_users_retweets(self):
+    def get_most_active_users_retweets(self, from_date=None, to_date=None):
+        from_date, to_date = self.parse_from_to_date(from_date, to_date)
+
         select_sql = "SELECT u.screen_name, count(*) AS number FROM retweet t " \
                      "JOIN user u on t.user_id = u.id " \
-                     "WHERE t.created_at > '2020-03-07' " \
+                     "WHERE t.created_at >= '" + from_date + "' AND t.created_at <= '" + to_date + "' " \
                      "GROUP BY t.user_id " \
                      "ORDER BY count(*) DESC " \
                      "LIMIT 10"
@@ -345,7 +353,7 @@ class DataSelector(DBManager):
         select_sql = "SELECT u.country_code, avg(t.sentiment_pol) AS polarity FROM tweet t " \
                      "JOIN user u on u.id = t.user_id " \
                      "WHERE u.country_code IS NOT NULL AND u.country_code <> 'und' AND t.created_at > '2020-03-07' AND t.created_at <= '" + to_date + "' " \
-                     "GROUP BY u.country_code"
+                                                                                                                                                      "GROUP BY u.country_code"
         self.cur.execute(select_sql)
         data = self.cur.fetchall()
         result = dict()
@@ -370,7 +378,7 @@ class DataSelector(DBManager):
         select_sql = "SELECT u.state_code, avg(t.sentiment_pol) AS polarity FROM tweet t " \
                      "JOIN user u on u.id = t.user_id " \
                      "WHERE u.country_code IS NOT NULL AND u.country_code = 'us' AND t.created_at > '2020-03-07' AND t.created_at <= '" + to_date + "' " \
-                     "GROUP BY u.state_code"
+                                                                                                                                                    "GROUP BY u.state_code"
         self.cur.execute(select_sql)
         data = self.cur.fetchall()
         result = dict()
@@ -397,9 +405,9 @@ class DataSelector(DBManager):
         return result
 
     def get_countries_populations(self, countries_names):
-        countries_names_str = ', '.join(list(map(lambda country: "'"+country+"'", countries_names)))
+        countries_names_str = ', '.join(list(map(lambda country: "'" + country + "'", countries_names)))
 
-        select_sql = "SELECT c.name AS country_name, c.population FROM country c WHERE c.name in ( "+ countries_names_str +" )"
+        select_sql = "SELECT c.name AS country_name, c.population FROM country c WHERE c.name in ( " + countries_names_str + " )"
         self.cur.execute(select_sql)
         data = self.cur.fetchall()
         result = dict()
@@ -407,21 +415,20 @@ class DataSelector(DBManager):
             result[row['country_name']] = row['population']
         return result
 
-    def get_epidemic_data_in(self, countries_names: list, columns: list, epidemic_name: str, to_date=None):
+    def get_epidemic_data_in(self, countries_names: list, columns: list, epidemic_name: str, to_date=None,
+                             since_epidemy_start=False):
         if to_date is None:
             to_date = self.today
         else:
             to_date = self.parse_datetime_to_date(to_date)
 
-
         columns_str = ', '.join(columns)
-        countries_str = ', '.join(list(map(lambda country: "'"+country+"'", countries_names)))
+        countries_str = ', '.join(list(map(lambda country: "'" + country + "'", countries_names)))
 
-
-        select_sql = "SELECT c.name AS country_name, e.date, " + columns_str + " FROM " + epidemic_name +" e " \
-                       "JOIN COUNTRY c on c.id = e.country_id " \
-                     "WHERE c.name in (" + countries_str + ") AND date <= '" + to_date + "' " \
-                     "ORDER BY e.date ASC"
+        select_sql = "SELECT c.name AS country_name, e.date, " + columns_str + " FROM " + epidemic_name + " e " \
+                                                                                                          "JOIN COUNTRY c on c.id = e.country_id " \
+                                                                                                          "WHERE c.name in (" + countries_str + ") AND date <= '" + to_date + "' " \
+                                                                                                                                                                                                       "ORDER BY e.date ASC"
 
         self.cur.execute(select_sql)
         raw_data = self.cur.fetchall()
@@ -435,12 +442,15 @@ class DataSelector(DBManager):
             for column in columns:
                 data[country_name][column] = []
 
+        epidemy_started = not since_epidemy_start
         for row in raw_data:
-            if row['date'] not in data['dates']:
-                data['dates'].append(row['date'])
-            for column in columns:
-                data[row['country_name']][column].append(row[column])
+            if epidemy_started:
+                if row['date'] not in data['dates']:
+                    data['dates'].append(row['date'])
+                for column in columns:
+                    data[row['country_name']][column].append(row[column])
+            else:
+                for c in columns:
+                    if row[c] > 0:
+                        epidemy_started = True
         return data
-
-
-

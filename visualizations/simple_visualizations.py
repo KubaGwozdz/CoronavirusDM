@@ -62,8 +62,8 @@ def most_popular_hashtags_per_day(db):
     return fig
 
 
-def most_popular_hashtags(db):
-    data = db.get_most_popular_hashtags()
+def most_popular_hashtags(db, from_date=None, to_date=None):
+    data = db.get_most_popular_hashtags(from_date, to_date)
     fig = go.Figure()
     fig.add_trace(
         go.Scatter(
@@ -114,8 +114,8 @@ def popular_users(db):
     return fig1, fig2
 
 
-def most_active_users(db):
-    data = db.get_most_active_users()
+def most_active_users(db, from_date=None, to_date=None):
+    data = db.get_most_active_users(from_date, to_date)
 
     fig = go.Figure()
     fig.add_trace(
@@ -132,8 +132,8 @@ def most_active_users(db):
     return fig
 
 
-def most_active_users_retweets(db):
-    data = db.get_most_active_users_retweets()
+def most_active_users_retweets(db, from_date=None, to_date=None):
+    data = db.get_most_active_users_retweets(from_date, to_date)
 
     fig = go.Figure()
     fig.add_trace(
@@ -302,6 +302,9 @@ def influencers_per_day(db):
 
 if __name__ == "__main__":
     db = DataSelector()
+
+    march = datetime.strptime("2020-03-01", "%Y-%m-%d").date(), datetime.strptime("2020-03-31", "%Y-%m-%d").date()
+    april = datetime.strptime("2020-04-01", "%Y-%m-%d").date(), datetime.strptime("2020-04-30", "%Y-%m-%d").date()
     # tweets_per_day_fig = tweets_per_day(db)
     # tweets_per_day_fig.show()
     #
@@ -315,14 +318,23 @@ if __name__ == "__main__":
     # popular_users_followers.show()
     # popular_users_friends.show()
 
-    # active_users_fig = most_active_users(db)
-    # active_users_fig.show()
+    active_users_march_fig = most_active_users(db, *march)
+    active_users_march_fig.show()
 
-    # most_active_users_retweets_fig = most_active_users_retweets(db)
-    # most_active_users_retweets_fig.show()
+    most_active_users_march_retweets_fig = most_active_users_retweets(db, *march)
+    most_active_users_march_retweets_fig.show()
 
-    # most_popular_hashtags_fig = most_popular_hashtags(db)
-    # most_popular_hashtags_fig.show()
+    most_popular_hashtags_march_fig = most_popular_hashtags(db, *march)
+    most_popular_hashtags_march_fig.show()
+
+    active_users_april_fig = most_active_users(db, *april)
+    active_users_april_fig.show()
+
+    most_active_users_april_retweets_fig = most_active_users_retweets(db, *april)
+    most_active_users_april_retweets_fig.show()
+
+    most_popular_hashtags_april_fig = most_popular_hashtags(db, *april)
+    most_popular_hashtags_april_fig.show()
 
     # active_users_per_day_tweets_fig = most_active_users_per_day_tweets(db)
     # active_users_per_day_tweets_fig.show()
@@ -330,11 +342,11 @@ if __name__ == "__main__":
     # tw_lang_per_day_fig = tw_lang_per_day(db)
     # tw_lang_per_day_fig.show()
 
-    inf_tw_per_day_fig, inf_rtw_per_day_fig, inf_rep_per_day_fig, inf_q_per_day_fig = influencers_per_day(db)
-    inf_tw_per_day_fig.show()
-    inf_rtw_per_day_fig.show()
-    inf_rep_per_day_fig.show()
-    inf_q_per_day_fig.show()
+    # inf_tw_per_day_fig, inf_rtw_per_day_fig, inf_rep_per_day_fig, inf_q_per_day_fig = influencers_per_day(db)
+    # inf_tw_per_day_fig.show()
+    # inf_rtw_per_day_fig.show()
+    # inf_rep_per_day_fig.show()
+    # inf_q_per_day_fig.show()
 
     # newly_created_accounts_fig = newly_created_accounts(db)
     # newly_created_accounts_fig.show()
