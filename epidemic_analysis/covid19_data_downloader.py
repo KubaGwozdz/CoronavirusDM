@@ -342,6 +342,6 @@ if __name__ == "__main__":
      path_global_recov_file = directory + '/' + 'time_series_covid19_recovered_global.csv'
 
      data = parse_csv_files(path_global_conf_file, path_global_deaths_file, path_us_conf_file, path_us_deaths_file,
-                            path_global_recov_file, '4/24/20') # bez starting date = wszystkie, data='no-zero-month/day/last-two-numbers-year'
+                            path_global_recov_file, '4/24/20') # no starting date = all, data='no-zero-month/day/last-two-numbers-year'
      # print(data)
      # data_inserter.insert_covid19_data(data)
