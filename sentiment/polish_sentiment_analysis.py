@@ -133,5 +133,3 @@ if __name__ == '__main__':
     fig = polish_sentiment(daily_sentiments)
 
     fig.show()
-
-
