@@ -300,6 +300,24 @@ def influencers_per_day(db):
     return t_fig, rtw_fig, rep_fig, q_fig
 
 
+def polish_sentiment(sentiments):
+    fig = go.Figure()
+    fig.add_trace(go.Bar(
+        x=[s[0] for s in sentiments],
+        y=[s[1] for s in sentiments],
+        error_y = dict(
+            array=[s[2] for s in sentiments]
+        )
+    ))
+
+    fig.update_layout(
+        title_text="Sentiment of polish tweets",
+        xaxis_title="date",
+        yaxis_title="sentiment"
+    )
+    return fig
+
+
 if __name__ == "__main__":
     db = DataSelector()
 

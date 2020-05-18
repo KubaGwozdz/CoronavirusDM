@@ -454,3 +454,9 @@ class DataSelector(DBManager):
                     if row[c] > 0:
                         epidemy_started = True
         return data
+
+    def get_polish_tweets(self):
+        select_sql = "SELECT id, text, date(created_at) FROM tweet WHERE lang == 'pl' and created_at == '2020-03-08'"
+        self.cur.execute(select_sql)
+        result = self.cur.fetchall()
+        return result
