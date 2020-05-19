@@ -5,6 +5,8 @@ import geolocation.us_states as states_mapper
 
 from db_utils.db_manager import DBManager
 
+from math import sqrt
+
 
 class DataSelector(DBManager):
     def __init__(self, manager=None):
@@ -13,13 +15,14 @@ class DataSelector(DBManager):
         else:
             self.connection = manager.connection
             self.cur = self.connection.cursor()
-        self.graph_users = 500
+        # self.graph_users = 1000
+        self.graph_users = 50
         self.graph_nodes = []
         self.is_executed = False
 
     def get_number_of_tweets_per_day(self):
         select_sql = "SELECT created_at , count(*) AS number FROM tweet " \
-                     "WHERE created_at > '2020-03-07' and DATE(created_at) != '2020-03-17' " \
+                     "WHERE created_at > '2020-03-07' and DATE(created_at) != '2020-03-17' and DATE(created_at) != '2020-04-29' " \
                      "GROUP BY DATE(created_at)"
         self.cur.execute(select_sql)
         data = self.cur.fetchall()
@@ -32,7 +35,7 @@ class DataSelector(DBManager):
 
     def get_number_of_retweets_per_day(self):
         select_sql = "SELECT created_at , count(*) AS number FROM retweet " \
-                     "WHERE created_at > '2020-03-07' and DATE(created_at) != '2020-03-17' " \
+                     "WHERE created_at > '2020-03-07' and DATE(created_at) != '2020-03-17' and DATE(created_at) != '2020-04-29' " \
                      "GROUP BY DATE(created_at)"
         self.cur.execute(select_sql)
         data = self.cur.fetchall()
@@ -47,7 +50,7 @@ class DataSelector(DBManager):
         select_sql = "SELECT hashtag.text, t.created_at, count(*) AS number from hashtag " \
                      "JOIN hashtag_tweet h_t on hashtag.id = h_t.hashtag_id " \
                      "JOIN tweet t on h_t.tweet_id = t.id " \
-                     "WHERE t.created_at > '2020-03-07' and DATE(created_at) != '2020-03-17' " \
+                     "WHERE t.created_at > '2020-03-07' and DATE(created_at) != '2020-03-17' and DATE(created_at) != '2020-04-29' " \
                      "AND h_t.hashtag_id in (SELECT hashtag_id FROM hashtag_tweet " \
                      "GROUP BY hashtag_id " \
                      "ORDER BY count(*) DESC " \
@@ -74,11 +77,11 @@ class DataSelector(DBManager):
                      "JOIN hashtag_tweet ht on h.id = ht.hashtag_id " \
                      "WHERE ht.hashtag_id in (SELECT hashtag_id FROM  hashtag_tweet ht " \
                      "JOIN tweet t on t.id = ht.tweet_id " \
-                     "WHERE t.created_at >= '"+from_date+"' AND t.created_ad <= '"+to_date+"' " \
-                     "GROUP BY ht.hashtag_id " \
-                     "ORDER BY count(*) DESC " \
-                     "LIMIT 10) " \
-                     "GROUP BY ht.hashtag_id ORDER BY number DESC"
+                     "WHERE t.created_at >= '" + from_date + "' AND t.created_at <= '" + to_date + "' " \
+                                                                                                   "GROUP BY ht.hashtag_id " \
+                                                                                                   "ORDER BY count(*) DESC " \
+                                                                                                   "LIMIT 10) " \
+                                                                                                   "GROUP BY ht.hashtag_id ORDER BY number DESC"
 
         self.cur.execute(select_sql)
         data = self.cur.fetchall()
@@ -110,13 +113,12 @@ class DataSelector(DBManager):
     def get_most_active_users(self, from_date=None, to_date=None):
         from_date, to_date = self.parse_from_to_date(from_date, to_date)
 
-
         select_sql = "SELECT u.screen_name, count(*) AS number FROM tweet t " \
                      "JOIN user u on t.user_id = u.id " \
                      "WHERE t.created_at >= '" + from_date + "' AND t.created_at <= '" + to_date + "' " \
-                     "GROUP BY t.user_id " \
-                     "ORDER BY count(*) DESC " \
-                     "LIMIT 10"
+                                                                                                   "GROUP BY t.user_id " \
+                                                                                                   "ORDER BY count(*) DESC " \
+                                                                                                   "LIMIT 10"
         self.cur.execute(select_sql)
         data = self.cur.fetchall()
         result = dict()
@@ -130,9 +132,9 @@ class DataSelector(DBManager):
         select_sql = "SELECT u.screen_name, count(*) AS number FROM retweet t " \
                      "JOIN user u on t.user_id = u.id " \
                      "WHERE t.created_at >= '" + from_date + "' AND t.created_at <= '" + to_date + "' " \
-                     "GROUP BY t.user_id " \
-                     "ORDER BY count(*) DESC " \
-                     "LIMIT 10"
+                                                                                                   "GROUP BY t.user_id " \
+                                                                                                   "ORDER BY count(*) DESC " \
+                                                                                                   "LIMIT 10"
         self.cur.execute(select_sql)
         data = self.cur.fetchall()
         result = dict()
@@ -143,7 +145,7 @@ class DataSelector(DBManager):
     def get_most_active_users_per_day_tweets(self):
         select_sql = "SELECT u.screen_name, t.created_at, count(*) AS number FROM tweet t " \
                      "JOIN user u on t.user_id = u.id " \
-                     "WHERE t.created_at > '2020-03-07' and t.created_at <> '2020-03-17' and u.id in " \
+                     "WHERE t.created_at > '2020-03-07' and t.created_at <> '2020-03-17' and t.created_at <> '2020-04-29' and u.id in " \
                      "(SELECT t.user_id from tweet t " \
                      "GROUP BY t.user_id " \
                      "ORDER BY count(*) DESC " \
@@ -206,25 +208,29 @@ class DataSelector(DBManager):
         data = self.cur.fetchall()
         return data
 
-    def get_retweet_edges(self):
+    def get_retweet_edges(self, from_date=None, to_date=None):
+        from_date, to_date = self.parse_from_to_date(from_date, to_date)
+
         select_sql = "SELECT DISTINCT  r.user_id AS user_A, t.user_id AS user_B FROM retweet r " \
                      "JOIN tweet t on r.tweet_id = t.id " \
-                     "WHERE t.user_id <> r.user_id AND t.user_id IN " + self.get_graph_nodes() + " AND r.user_id IN " + self.get_graph_nodes()
+                     "WHERE t.user_id <> r.user_id AND r.created_at >= '" + from_date + "' AND r.created_at <= '" + to_date + "' AND t.user_id IN " + self.get_graph_nodes() + " AND r.user_id IN " + self.get_graph_nodes()
         self.cur.execute(select_sql)
         data = self.cur.fetchall()
         return data
 
-    def get_quote_edges(self):
+    def get_quote_edges(self, from_date=None, to_date=None):
+        from_date, to_date = self.parse_from_to_date(from_date, to_date)
+
         select_sql = "SELECT DISTINCT t_o.user_id AS user_A, t_q.user_id AS user_B FROM tweet t_o " \
                      "JOIN tweet t_q on t_q.quoted_status_id = t_o.id " \
-                     "WHERE t_o.user_id IN " + self.get_graph_nodes() + " AND t_q.user_id IN " + self.get_graph_nodes()
+                     "WHERE t_q.created_at >= '" + from_date + "' AND t_q.created_at <= '" + to_date + "' AND t_o.user_id IN " + self.get_graph_nodes() + " AND t_q.user_id IN " + self.get_graph_nodes()
         self.cur.execute(select_sql)
         data = self.cur.fetchall()
         return data
 
     def get_tw_lang_per_day(self):
         select_sql = "SELECT t.lang, DATE(t.created_at) AS date, count(*) AS number FROM tweet t " \
-                     "WHERE DATE(t.created_at) <> '2020-03-17' AND DATE(t.created_at) > '2020-03-07' " \
+                     "WHERE DATE(t.created_at) <> '2020-03-17' AND DATE(t.created_at) <> '2020-04-29' AND DATE(t.created_at) > '2020-03-07' " \
                      "GROUP BY DATE (t.created_at), t.lang;"
         self.cur.execute(select_sql)
         data = self.cur.fetchall()
@@ -243,7 +249,7 @@ class DataSelector(DBManager):
     def get_influencers_per_day(self):
         select_sql = "SELECT u.screen_name, DATE(t.created_at) AS date, count(*) AS number, sum(t.retweet_count) AS retweet_count, sum(t.reply_count) AS reply_count, sum(t.quote_count) AS quote_count from tweet t " \
                      "JOIN user u ON u.id = t.user_id " \
-                     "WHERE DATE(t.created_at) <> '2020-03-17' AND DATE(t.created_at) > '2020-03-07' AND u.screen_name in ('realDonaldTrump', 'BarackObama', 'WHO', 'MorawieckiM', 'Pontifex_es', 'UN', 'BorisJohnson', 'AndrzejDuda', 'PremierRP', 'MZ_GOV_PL', 'GIS_gov', 'GiuseppeConteIT', 'EmmanuelMacron', 'sanchezcastejon', 'GermanyDiplo') " \
+                     "WHERE DATE(t.created_at) <> '2020-03-17' AND DATE(t.created_at) <> '2020-04-29' AND DATE(t.created_at) > '2020-03-07' AND u.screen_name in ('realDonaldTrump', 'BarackObama', 'WHO', 'MorawieckiM', 'Pontifex_es', 'UN', 'BorisJohnson', 'AndrzejDuda', 'PremierRP', 'MZ_GOV_PL', 'GIS_gov', 'GiuseppeConteIT', 'EmmanuelMacron', 'sanchezcastejon', 'GermanyDiplo') " \
                      "GROUP BY DATE(t.created_at), t.user_id"
         self.cur.execute(select_sql)
         data = self.cur.fetchall()
@@ -326,11 +332,13 @@ class DataSelector(DBManager):
         data = self.cur.fetchmany(batch_size)
         return data
 
-    def get_tweets_per_country(self):
+    def get_tweets_per_country(self, from_date=None, to_date=None):
+        from_date, to_date = self.parse_from_to_date(from_date, to_date)
+
         select_sql = "SELECT u.country_code, count(*) AS number FROM tweet t " \
                      "JOIN user u on u.id = t.user_id " \
-                     "WHERE u.country_code IS NOT NULL AND u.country_code <> 'und' AND t.created_at > '2020-03-07' " \
-                     "GROUP BY u.country_code"
+                     "WHERE u.country_code IS NOT NULL AND u.country_code <> 'und' AND t.created_at >= '" + from_date + "' AND t.created_at <= '" + to_date + "' " \
+                                                                                                                                                              "GROUP BY u.country_code"
         self.cur.execute(select_sql)
         data = self.cur.fetchall()
         result = dict()
@@ -343,17 +351,16 @@ class DataSelector(DBManager):
             result['country_code'].append(cc)
             result['country_name'].append(cn)
             result['number'].append(row['number'])
+
         return result
 
-    def get_sentiment_per_country(self, to_date=None):
-        if to_date is None:
-            to_date = self.today
-        else:
-            to_date = self.parse_datetime_to_date(to_date)
+    def get_sentiment_per_country(self, from_date=None, to_date=None):
+        from_date, to_date = self.parse_from_to_date(from_date, to_date)
+
         select_sql = "SELECT u.country_code, avg(t.sentiment_pol) AS polarity FROM tweet t " \
                      "JOIN user u on u.id = t.user_id " \
-                     "WHERE u.country_code IS NOT NULL AND u.country_code <> 'und' AND t.created_at > '2020-03-07' AND t.created_at <= '" + to_date + "' " \
-                                                                                                                                                      "GROUP BY u.country_code"
+                     "WHERE u.country_code IS NOT NULL AND u.country_code <> 'und' AND t.created_at >= '" + from_date + "' AND t.created_at <= '" + to_date + "' " \
+                                                                                                                                                              "GROUP BY u.country_code"
         self.cur.execute(select_sql)
         data = self.cur.fetchall()
         result = dict()
@@ -369,16 +376,13 @@ class DataSelector(DBManager):
 
         return result
 
-    def get_sentiment_per_state(self, to_date=None):
-        if to_date is None:
-            to_date = self.today
-        else:
-            to_date = self.parse_datetime_to_date(to_date)
+    def get_sentiment_per_state(self, from_date=None, to_date=None):
+        from_date, to_date = self.parse_from_to_date(from_date, to_date)
 
         select_sql = "SELECT u.state_code, avg(t.sentiment_pol) AS polarity FROM tweet t " \
                      "JOIN user u on u.id = t.user_id " \
-                     "WHERE u.country_code IS NOT NULL AND u.country_code = 'us' AND t.created_at > '2020-03-07' AND t.created_at <= '" + to_date + "' " \
-                                                                                                                                                    "GROUP BY u.state_code"
+                     "WHERE u.country_code IS NOT NULL AND u.country_code = 'us' AND t.created_at >= '" + from_date + "' AND t.created_at <= '" + to_date + "' " \
+                                                                                                                                                            "GROUP BY u.state_code"
         self.cur.execute(select_sql)
         data = self.cur.fetchall()
         result = dict()
@@ -392,6 +396,73 @@ class DataSelector(DBManager):
             result['state_name'].append(sn)
             result['polarity'].append(row['polarity'])
 
+    def get_sentiment_per_state_per_day(self):
+        select_sql = "SELECT u.state_code, avg(t.sentiment_pol) AS sentiment, AVG(t.sentiment_pol*t.sentiment_pol) - AVG(t.sentiment_pol)*AVG(t.sentiment_pol) AS variance, DATE(t.created_at) AS created_at from tweet t " \
+                     "JOIN user u on u.id = t.user_id " \
+                     "WHERE u.country_code == 'us' AND u.state_code is not null AND t.created_at > '2020-03-07' AND t.created_at <> '2020-03-17' AND t.created_at <> '2020-04-29' " \
+                     "GROUP BY u.state_code, DATE(t.created_at);"
+
+        self.cur.execute(select_sql)
+        data = self.cur.fetchall()
+
+        result = dict()
+        for row in data:
+            sc = row['state_code']
+            if sc not in result.keys():
+                sn = states_mapper.code_to_state(row['state_code'])
+
+                result[sc] = dict()
+                result[sc]['dates'] = []
+                result[sc]['sentiment'] = []
+                result[sc]['stdev'] = []
+                result[sc]['name'] = sn
+
+            result[sc]['dates'].append(row['created_at'])
+            sentiment = row['sentiment'] if row['sentiment'] is not None else 0
+            stdev = sqrt(row['variance']) if row['variance'] is not None else 0
+            result[sc]['sentiment'].append(sentiment)
+            result[sc]['stdev'].append(stdev)
+
+        select_sql = "SELECT avg(t.sentiment_pol) AS sentiment, AVG(t.sentiment_pol*t.sentiment_pol) - AVG(t.sentiment_pol)*AVG(t.sentiment_pol) AS variance, DATE(t.created_at) AS created_at from tweet t " \
+                     "JOIN user u on u.id = t.user_id " \
+                     "WHERE u.country_code == 'us' AND t.created_at > '2020-03-07' AND t.created_at <> '2020-03-17' AND t.created_at <> '2020-04-29' " \
+                     "GROUP BY DATE(t.created_at) " \
+                     "ORDER BY t.created_at;"
+        self.cur.execute(select_sql)
+        data = self.cur.fetchall()
+
+        result['us'] = dict()
+        result['us']['sentiment'] = []
+        result['us']['stdev'] = []
+        result['us']['dates'] = []
+        for row in data:
+            sentiment = row['sentiment'] if row['sentiment'] is not None else 0
+            stdev = sqrt(row['variance']) if row['variance'] is not None else 0
+            result['us']['sentiment'].append(sentiment)
+            result['us']['stdev'].append(stdev)
+            result['us']['dates'].append(row['created_at'])
+
+        return result
+
+    def get_hashtags_cloud(self, from_date=None, to_date=None):
+        from_date, to_date = self.parse_from_to_date(from_date, to_date)
+
+        select_sql = "SELECT h.text, count(ht.hashtag_id) AS popularity  from hashtag h " \
+                     "JOIN hashtag_tweet ht on h.id = ht.hashtag_id " \
+                     "JOIN tweet t on ht.tweet_id = t.id " \
+                     "WHERE t.created_at >= '" + from_date + "' AND t.created_at <= '" + to_date + "'" \
+                                                                                                   "GROUP BY ht.hashtag_id " \
+                                                                                                   "ORDER BY popularity desc " \
+                                                                                                   "LIMIT 10000"
+        self.cur.execute(select_sql)
+        data = self.cur.fetchall()
+        result = dict()
+        for row in data:
+            result[row['text']] = row['popularity']
+        return result
+
+
+    # ----- EPIDEMIC MODEL -----
     def get_countries(self):
         select_sql = "SELECT id, name FROM country WHERE state == ''"
         self.cur.execute(select_sql)
@@ -428,7 +499,7 @@ class DataSelector(DBManager):
         select_sql = "SELECT c.name AS country_name, e.date, " + columns_str + " FROM " + epidemic_name + " e " \
                                                                                                           "JOIN COUNTRY c on c.id = e.country_id " \
                                                                                                           "WHERE c.name in (" + countries_str + ") AND date <= '" + to_date + "' " \
-                                                                                                                                                                                                       "ORDER BY e.date ASC"
+                                                                                                                                                                              "ORDER BY e.date ASC"
 
         self.cur.execute(select_sql)
         raw_data = self.cur.fetchall()

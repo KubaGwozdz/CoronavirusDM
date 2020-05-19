@@ -5,39 +5,41 @@ from db_utils.data_selector import DataSelector
 
 import plotly.graph_objects as go
 
+from datetime import datetime
 
-def update_weight(u_id, to_add):
+
+def update_weight(u_id, to_add, nodes):
     if u_id in nodes.keys():
         nodes[u_id] += to_add
 
 
-def parse_nodes_weights(data, weight):
+def parse_nodes_weights(data, weight, nodes):
     for node in data:
         t_u_id = node['user_id']
         number = node['number']
-        update_weight(t_u_id, weight * number)
+        update_weight(t_u_id, weight * number, nodes)
 
 
-def add_edge(user_A, user_B):
+def add_edge(user_A, user_B, edges):
     if (user_A, user_B) not in edges and (user_B, user_A) not in edges:
         edges.add((user_A, user_B))
 
 
-def parse_edges(data):
+def parse_edges(data, edges):
     for edge in data:
         user_A = edge['user_A']
         user_B = edge['user_B']
-        add_edge(user_A, user_B)
+        add_edge(user_A, user_B, edges)
 
 
-def has_edges(node_id):
+def has_edges(node_id, edges):
     for (from_id, to_id) in edges:
         if from_id == node_id or to_id == node_id:
             return True
     return False
 
 
-def draw_plotly_graph(G):
+def draw_plotly_graph(G, MAX_W, month_name):
     print("Drawing plotly graph...")
 
     edge_x = []
@@ -90,7 +92,7 @@ def draw_plotly_graph(G):
 
     fig = go.Figure(data=[edge_trace, node_trace],
                     layout=go.Layout(
-                        title='<br>Network graph</br>',
+                        title='<br>Network graph: ' + month_name + '</br>',
                         titlefont_size=16,
                         showlegend=False,
                         hovermode='closest',
@@ -134,58 +136,71 @@ scaling = lambda x: x
 MIN_SIZE = 10
 MAX_SIZE = 50 + MIN_SIZE
 
-G = nx.Graph()
-db = DataSelector()
 
-nodes_data = db.get_user_nodes()
-edges = set()  # (from, to)
-nodes = dict()  # id -> w
-nodes_n = dict()  # id -> com
+def make_network_graph(db, from_date=None, to_date=None, month_name=None):
+    G = nx.Graph()
 
-for node in nodes_data:
-    nodes[node['id']] = 0
+    print("-- GETTING USER NODES --")
+    nodes_data = db.get_user_nodes()
+    edges = set()  # (from, to)
+    nodes = dict()  # id -> w
+    # nodes_n = dict()  # id -> com
 
-print("--- Node weights ---")
-data = db.get_nodes_weights()
-for node in data:
-    t_u_id = node['user_id']
-    replies = node['replies']
-    quotes = node['quotes']
-    retweets = node['retweets']
-    update_weight(t_u_id, REPLY_W * replies)
-    update_weight(t_u_id, QUOTE_W * quotes)
-    update_weight(t_u_id, RETWEET_W * retweets)
+    for node in nodes_data:
+        nodes[node['id']] = 0
 
-print("1/3 --> RETWEETS, QUOTES, REPLIES")
-parse_nodes_weights(db.get_followers_weights(), FOLLOWERS_W)
-print("2/3 --> FOLLOWERS")
-parse_nodes_weights(db.get_usermentions_weights(), USER_MENTION_W)
-print("3/3 --> USER_MENTIONS")
+    print("--- Node weights ---")
+    data = db.get_nodes_weights()
+    for node in data:
+        t_u_id = node['user_id']
+        replies = node['replies']
+        quotes = node['quotes']
+        retweets = node['retweets']
+        update_weight(t_u_id, REPLY_W * replies, nodes)
+        update_weight(t_u_id, QUOTE_W * quotes, nodes)
+        update_weight(t_u_id, RETWEET_W * retweets, nodes)
 
-MAX_W = scaling(max(list(nodes.values())))
-print("----- Edges -----")
-parse_edges(db.get_retweet_edges())
-print("1/2 --> RETWEET edges")
-parse_edges(db.get_quote_edges())
-print("2/2 --> QUOTE edges")
+    print("1/3 --> RETWEETS, QUOTES, REPLIES")
+    parse_nodes_weights(db.get_followers_weights(), FOLLOWERS_W, nodes)
+    print("2/3 --> FOLLOWERS")
+    parse_nodes_weights(db.get_usermentions_weights(), USER_MENTION_W, nodes)
+    print("3/3 --> USER_MENTIONS")
 
-print("-- Creating networkx --")
-for node in nodes_data:
-    if has_edges(node['id']):
-        G.add_node(node['id'], screen_name=node['screen_name'], followers_count=node['followers_count'],
-                   friends_count=node['friends_count'], w=nodes[node['id']])
+    MAX_W = scaling(max(list(nodes.values())))
+    print("----- Edges -----")
+    parse_edges(db.get_retweet_edges(from_date, to_date), edges)
+    print("1/2 --> RETWEET edges")
+    parse_edges(db.get_quote_edges(from_date, to_date), edges)
+    print("2/2 --> QUOTE edges")
 
-for (a, b) in edges:
-    G.add_edge(a, b)
+    print("-- Creating networkx --")
+    for node in nodes_data:
+        if has_edges(node['id'], edges):
+            G.add_node(node['id'], screen_name=node['screen_name'], followers_count=node['followers_count'],
+                       friends_count=node['friends_count'], w=nodes[node['id']])
 
-pos = nx.spring_layout(G, k=0.5, iterations=100)
-# pos = nx.spiral_layout(G)
+    for (a, b) in edges:
+        G.add_edge(a, b)
 
-communities = find_communities(G)
-# pos = nx.shell_layout(G, communities)
+    pos = nx.spring_layout(G, k=0.5, iterations=100)
+    # pos = nx.spiral_layout(G)
 
-for node in G.nodes:
-    G.nodes[node]['pos'] = list(pos[node])
-print("-- Graph created --")
+    communities = find_communities(G)
+    # pos = nx.shell_layout(G, communities)
 
-draw_plotly_graph(G)
+    for node in G.nodes:
+        G.nodes[node]['pos'] = list(pos[node])
+    print("-- Graph created --")
+
+    draw_plotly_graph(G, MAX_W, month_name)
+
+
+if __name__ == "__main__":
+    db = DataSelector()
+
+    march = datetime.strptime("2020-03-01", "%Y-%m-%d").date(), datetime.strptime("2020-03-31",
+                                                                                  "%Y-%m-%d").date(), "march"
+    april = datetime.strptime("2020-04-01", "%Y-%m-%d").date(), datetime.strptime("2020-04-30",
+                                                                                  "%Y-%m-%d").date(), "april"
+    make_network_graph(db, *march)
+    make_network_graph(db, *april)
