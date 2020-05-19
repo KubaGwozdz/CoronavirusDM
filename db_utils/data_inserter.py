@@ -316,5 +316,13 @@ class DataInserter(DBManager):
         self.cur.executemany(insert_sql, data)
         self.connection.commit()
 
+    def update_tweet_polish_sentiment(self, sentiments):
+
+        insert_sql = 'UPDATE tweet SET sentiment_pol = ? WHERE id == ?'
+
+        self.cur.executemany(insert_sql, sentiments)
+        self.connection.commit()
+
+
     def close_db(self):
         self.connection.close()

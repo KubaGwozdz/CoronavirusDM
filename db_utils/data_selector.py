@@ -526,8 +526,55 @@ class DataSelector(DBManager):
                         epidemy_started = True
         return data
 
-    def get_polish_tweets(self):
-        select_sql = "SELECT id, text, date(created_at) FROM tweet WHERE lang == 'pl' and created_at == '2020-03-08'"
+    def get_polish_tweets(self, batch_size):
+        select_sql = "SELECT t.id, t.text, date(t.created_at) FROM tweet t " \
+                     "JOIN  user u on u.id == t.user_id " \
+                     "WHERE t.lang == 'pl' and date(t.created_at) > date('2020-03-07') and " \
+                     "date(t.created_at) <> date('2020-03-17') AND date(t.created_at) <> date('2020-04-29')" \
+                     "and t.sentiment_pol isnull"
+
+        if not self.is_executed:
+            self.cur.execute(select_sql)
+            self.is_executed = True
+
+        result = self.cur.fetchmany(batch_size)
+        return result
+
+    def get_polish_tweets_sentiment(self):
+        select_sql = "SELECT avg(t.sentiment_pol) AS sentiment, " \
+                     "AVG(t.sentiment_pol*t.sentiment_pol) - AVG(t.sentiment_pol)*AVG(t.sentiment_pol) AS variance, " \
+                     "DATE(t.created_at) AS created_at from tweet t " \
+                     "WHERE t.sentiment_pol is not null " \
+                     "GROUP BY DATE(t.created_at);"
+
         self.cur.execute(select_sql)
-        result = self.cur.fetchall()
+        data = self.cur.fetchall()
+        result = dict()
+        result['sentiment'] = []
+        result['stdev'] = []
+        result['date'] = []
+
+        for row in data:
+            result['sentiment'].append(row['sentiment'])
+            result['stdev'].append(row['variance'])
+            result['date'].append(row['created_at'])
+
+        return result
+
+    def get_number_daily_polish_tweets(self):
+        select_sql = "SELECT count(*) AS number, date(t.created_at) as created_at FROM tweet t " \
+                     "WHERE t.lang == 'pl' and date(t.created_at) > date('2020-03-07') and " \
+                     "date(t.created_at) <> date('2020-03-17') AND date(t.created_at) <> date('2020-04-29')" \
+                     "GROUP BY date(created_at)"
+
+        self.cur.execute(select_sql)
+        data = self.cur.fetchall()
+        result = dict()
+        result['number'] = []
+        result['date'] = []
+
+        for row in data:
+            result['number'].append(row['number'])
+            result['date'].append(row['created_at'])
+
         return result

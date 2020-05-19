@@ -4,6 +4,7 @@ from db_utils.data_selector import DataSelector
 import plotly.graph_objects as go
 import random
 from visualizations.fig_utils import save_fig
+import statistics as stat
 
 def str_to_date(date_str):
     return datetime.strptime(date_str, "%Y-%m-%d").date()
@@ -354,16 +355,47 @@ def influencers_per_day(db):
     return t_fig, rtw_fig, rep_fig, q_fig
 
 
-def polish_sentiment(sentiments):
+def polish_sentiment(db):
+    data = db.get_polish_tweets_sentiment()
     fig = go.Figure()
+    data['color'] = [1 if e > 0 else 0 for e in data['sentiment']]
     fig.add_trace(go.Bar(
-        x=[s[0] for s in sentiments],
-        y=[s[1] for s in sentiments],
-        error_y = dict(
-            array=[s[2] for s in sentiments]
-        )
+        x=data['date'],
+        y=data['sentiment'],
+        error_y=dict(
+            type='data',
+            array=data['stdev']
+        ),
+        marker={'color': data['sentiment'], 'colorscale': 'RdYlGn'}
     ))
+    fig.update_layout(
+        title_text="Sentiment of polish tweets",
+        xaxis_title="date",
+        yaxis_title="sentiment"
+    )
+    return fig
 
+
+def polish_sentiment_with_daily_tweets(db):
+    data = db.get_polish_tweets_sentiment()
+    number = db.get_number_daily_polish_tweets()
+    fig = go.Figure()
+    data['color'] = [1 if e > 0 else 0 for e in data['sentiment']]
+    fig.add_trace(go.Bar(
+        x=data['date'],
+        y=data['sentiment'],
+        error_y=dict(
+            type='data',
+            array=data['stdev']
+        ),
+        marker={'color': data['sentiment'], 'colorscale': 'RdYlGn'},
+        name="Sentiment"
+    ))
+    fig.add_trace(go.Scatter(
+        x = number['date'],
+        y = number['number'],
+        name = 'Number of tweets'
+    ))
     fig.update_layout(
         title_text="Sentiment of polish tweets",
         xaxis_title="date",
@@ -460,5 +492,11 @@ if __name__ == "__main__":
     # sentiment_per_state_per_day_fig = sentiment_per_state_per_day(db)
     # sentiment_per_state_per_day_fig.show()
 
-    most_popular_hashtags_april_fig = most_popular_hashtags(db, *april)
-    most_popular_hashtags_april_fig.show()
+    # most_popular_hashtags_april_fig = most_popular_hashtags(db, *april)
+    # most_popular_hashtags_april_fig.show()
+
+    polish_sentiment_fig = polish_sentiment(db)
+    polish_sentiment_fig.show()
+
+    # polish_sentiment_with_daily_tweets_fig = polish_sentiment_with_daily_tweets(db)
+    # polish_sentiment_with_daily_tweets_fig.show()
