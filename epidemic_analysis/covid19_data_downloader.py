@@ -246,7 +246,7 @@ def parse_csv_files(path_global_conf, path_global_deaths, path_us_conf, path_us_
         state = row[6]
 
         state_code = us_states.state_to_code(state)
-        if state_code == 'und':
+        if state_code is None:
             state_code = state
 
         if state not in parsed_states:
@@ -287,7 +287,7 @@ def parse_csv_files(path_global_conf, path_global_deaths, path_us_conf, path_us_
         state = row[6]
 
         state_code = us_states.state_to_code(state)
-        if state_code == 'und':
+        if state_code is None:
             state_code = state
 
         if state not in parsed_states:
