@@ -6,6 +6,7 @@ import random
 from visualizations.fig_utils import save_fig
 import statistics as stat
 
+
 def str_to_date(date_str):
     return datetime.strptime(date_str, "%Y-%m-%d").date()
 
@@ -180,7 +181,7 @@ def most_active_users(db, from_date=None, to_date=None, month_name=None):
         )
     )
     fig.update_layout(
-        title_text='Most active users (tweets) since 2020-03-07' if month_name is None  else "Most active users (tweets) in "+month_name,
+        title_text='Most active users (tweets) since 2020-03-07' if month_name is None else "Most active users (tweets) in " + month_name,
         xaxis_title="username",
         yaxis_title="number of tweets"
     )
@@ -198,7 +199,7 @@ def most_active_users_retweets(db, from_date=None, to_date=None, month_name=None
         )
     )
     fig.update_layout(
-        title_text='Most active users (retweets) since 2020-03-07' if month_name is None  else "Most active users (retweets) in "+month_name,
+        title_text='Most active users (retweets) since 2020-03-07' if month_name is None else "Most active users (retweets) in " + month_name,
         xaxis_title="username",
         yaxis_title="number of retweets"
     )
@@ -307,36 +308,47 @@ def influencers_per_day(db):
         yaxis_title="number of tweets",
     )
     rtw_fig = go.Figure()
+    i = 0
     for s_name in data.keys():
         rtw_fig.add_trace(
             go.Scatter(
                 x=data[s_name]['dates'],
                 y=data[s_name]['retweet_count'],
                 name=s_name,
+                line=dict(
+                    color=colors[i]
+                ),
                 opacity=0.8
             )
         )
+        i += 1
     rtw_fig.update_layout(
         title_text="Retweets of Influencers' tweets per day",
         xaxis_title="date",
         yaxis_title="number of retweets"
     )
     rep_fig = go.Figure()
+    i = 0
     for s_name in data.keys():
         rep_fig.add_trace(
             go.Scatter(
                 x=data[s_name]['dates'],
                 y=data[s_name]['reply_count'],
                 name=s_name,
+                line=dict(
+                    color=colors[i]
+                ),
                 opacity=0.8
             )
         )
+        i += 1
     rep_fig.update_layout(
         title_text="Replies to Influencers' tweets per day",
         xaxis_title="date",
         yaxis_title="number of replies"
     )
     q_fig = go.Figure()
+    i = 0
     for s_name in data.keys():
         q_fig.add_trace(
             go.Scatter(
@@ -346,6 +358,7 @@ def influencers_per_day(db):
                 opacity=0.8
             )
         )
+        i += 1
     q_fig.update_layout(
         title_text="Quotes of Influencers' tweets per day",
         xaxis_title="date",
@@ -392,9 +405,9 @@ def polish_sentiment_with_daily_tweets(db):
         name="Sentiment"
     ))
     fig.add_trace(go.Scatter(
-        x = number['date'],
-        y = number['number'],
-        name = 'Number of tweets'
+        x=number['date'],
+        y=number['number'],
+        name='Number of tweets'
     ))
     fig.update_layout(
         title_text="Sentiment of polish tweets",
@@ -437,11 +450,55 @@ def sentiment_per_state_per_day(db):
     return fig
 
 
+def sentiment_per_country_per_day(db):
+    data = db.get_sentiment_per_country_per_day()
+    fig = go.Figure()
+    for cc in data.keys():
+        fig.add_trace(go.Scatter(
+            x=data[cc]['dates'],
+            y=data[cc]['sentiment'],
+            error_y=dict(type='data', array=data[cc]['stdev']),
+            name=data[cc]['name'],
+            mode="lines",
+            opacity=0.5,
+            line=dict(width=1)
+
+        ))
+    fig.update_layout(
+        title_text="Sentiment in different countries",
+        xaxis_title="date",
+        yaxis_title="Seniment"
+    )
+    return fig
+
+
+def world_sentiment_per_day(db):
+    data = db.get_world_sentiment_per_day()
+    fig = go.Figure()
+    fig.add_trace(go.Scatter(
+        x=data['dates'],
+        y=data['sentiment'],
+        error_y=dict(type='data', array=data['stdev']),
+        mode="lines",
+        opacity=0.5,
+        line=dict(width=1)
+
+    ))
+    fig.update_layout(
+        title_text="Sentiment per day",
+        xaxis_title="date",
+        yaxis_title="Seniment"
+    )
+    return fig
+
+
 if __name__ == "__main__":
     db = DataSelector()
 
-    march = datetime.strptime("2020-03-01", "%Y-%m-%d").date(), datetime.strptime("2020-03-31", "%Y-%m-%d").date(), "march"
-    april = datetime.strptime("2020-04-01", "%Y-%m-%d").date(), datetime.strptime("2020-04-30", "%Y-%m-%d").date(), "april"
+    march = datetime.strptime("2020-03-01", "%Y-%m-%d").date(), datetime.strptime("2020-03-31",
+                                                                                  "%Y-%m-%d").date(), "march"
+    april = datetime.strptime("2020-04-01", "%Y-%m-%d").date(), datetime.strptime("2020-04-30",
+                                                                                  "%Y-%m-%d").date(), "april"
 
     # tweets_per_day_fig = tweets_per_day(db)
     # tweets_per_day_fig.show()
@@ -464,7 +521,10 @@ if __name__ == "__main__":
 
     # most_popular_hashtags_march_fig = most_popular_hashtags(db, *march)
     # most_popular_hashtags_march_fig.show()
-    #
+
+    # most_popular_hashtags_april_fig = most_popular_hashtags(db, *april)
+    # most_popular_hashtags_april_fig.show()
+
     # active_users_april_fig = most_active_users(db, *april)
     # active_users_april_fig.show()
     #
@@ -476,7 +536,7 @@ if __name__ == "__main__":
     #
     # tw_lang_per_day_fig = tw_lang_per_day(db)
     # tw_lang_per_day_fig.show()
-    #
+
     # inf_tw_per_day_fig, inf_rtw_per_day_fig, inf_rep_per_day_fig, inf_q_per_day_fig = influencers_per_day(db)
     # inf_tw_per_day_fig.show()
     # inf_rtw_per_day_fig.show()
@@ -492,11 +552,14 @@ if __name__ == "__main__":
     # sentiment_per_state_per_day_fig = sentiment_per_state_per_day(db)
     # sentiment_per_state_per_day_fig.show()
 
-    # most_popular_hashtags_april_fig = most_popular_hashtags(db, *april)
-    # most_popular_hashtags_april_fig.show()
+    # sentiment_per_country_per_day_fig = sentiment_per_country_per_day(db)
+    # sentiment_per_country_per_day_fig.show()
 
-    polish_sentiment_fig = polish_sentiment(db)
-    polish_sentiment_fig.show()
+    # polish_sentiment_fig = polish_sentiment(db)
+    # polish_sentiment_fig.show()
+    #
+    polish_sentiment_with_daily_tweets_fig = polish_sentiment_with_daily_tweets(db)
+    polish_sentiment_with_daily_tweets_fig.show()
 
-    # polish_sentiment_with_daily_tweets_fig = polish_sentiment_with_daily_tweets(db)
-    # polish_sentiment_with_daily_tweets_fig.show()
+    # world_sentiment_per_day_fig = world_sentiment_per_day(db)
+    # world_sentiment_per_day_fig.show()

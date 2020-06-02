@@ -15,8 +15,8 @@ class DataSelector(DBManager):
         else:
             self.connection = manager.connection
             self.cur = self.connection.cursor()
-        # self.graph_users = 1000
-        self.graph_users = 50
+        self.graph_users = 1000
+        # self.graph_users = 50
         self.graph_nodes = []
         self.is_executed = False
 
@@ -332,7 +332,7 @@ class DataSelector(DBManager):
         data = self.cur.fetchmany(batch_size)
         return data
 
-    def get_tweets_per_country(self, from_date=None, to_date=None):
+    def get_tweets_per_country(self, from_date=None, to_date=None, divided_by_population=False):
         from_date, to_date = self.parse_from_to_date(from_date, to_date)
 
         select_sql = "SELECT u.country_code, count(*) AS number FROM tweet t " \
@@ -351,7 +351,17 @@ class DataSelector(DBManager):
             result['country_code'].append(cc)
             result['country_name'].append(cn)
             result['number'].append(row['number'])
-
+        if divided_by_population:
+            population = self.get_countries_populations(result['country_name'], all=True)
+            for i in range(len(result['country_name'])):
+                name = result['country_name'][i]
+                if name in population.keys():
+                    if population[name] is not None:
+                        result['number'][i] /= population[name]
+                    else:
+                        result['number'][i] = 0
+                else:
+                    result['number'][i] = 0
         return result
 
     def get_sentiment_per_country(self, from_date=None, to_date=None):
@@ -395,6 +405,56 @@ class DataSelector(DBManager):
             result['state_code'].append(sc)
             result['state_name'].append(sn)
             result['polarity'].append(row['polarity'])
+        return result
+
+    def get_sentiment_per_country_per_day(self):
+        select_sql = "SELECT u.country_code, avg(t.sentiment_pol) AS sentiment, AVG(t.sentiment_pol*t.sentiment_pol) - AVG(t.sentiment_pol)*AVG(t.sentiment_pol) AS variance, DATE(t.created_at) AS created_at from tweet t " \
+                     "JOIN user u on u.id = t.user_id " \
+                     "WHERE u.country_code IN ('us','pl', 'gb', 'it') AND t.created_at > '2020-03-07' AND t.created_at <> '2020-03-17' AND t.created_at <> '2020-04-29' " \
+                     "GROUP BY u.country_code, DATE(t.created_at);"
+
+        self.cur.execute(select_sql)
+        data = self.cur.fetchall()
+        result = dict()
+
+        for row in data:
+            cc = coco.convert(names=row['country_code'], to='ISO3')
+            if cc not in result.keys():
+                cn = coco.convert(cc, to='name_short')
+                result[cc] = dict()
+                result[cc]['dates'] = []
+                result[cc]['sentiment'] = []
+                result[cc]['stdev'] = []
+                result[cc]['name'] = cn
+
+            result[cc]['dates'].append(row['created_at'])
+            sentiment = row['sentiment'] if row['sentiment'] is not None else 0
+            stdev = sqrt(row['variance']) if row['variance'] is not None else 0
+            result[cc]['sentiment'].append(sentiment)
+            result[cc]['stdev'].append(stdev)
+        return result
+
+    def get_world_sentiment_per_day(self):
+        select_sql = "SELECT avg(t.sentiment_pol) AS sentiment, AVG(t.sentiment_pol*t.sentiment_pol) - AVG(t.sentiment_pol)*AVG(t.sentiment_pol) AS variance, DATE(t.created_at) AS created_at from tweet t " \
+                     "JOIN user u on u.id = t.user_id " \
+                     "WHERE t.created_at > '2020-03-07' AND t.created_at <> '2020-03-17' AND t.created_at <> '2020-04-29' " \
+                     "GROUP BY DATE(t.created_at);"
+
+        self.cur.execute(select_sql)
+        data = self.cur.fetchall()
+
+        result = dict()
+        result['dates'] = []
+        result['sentiment'] = []
+        result['stdev'] = []
+        for row in data:
+            sentiment = row['sentiment'] if row['sentiment'] is not None else 0
+            stdev = sqrt(row['variance']) if row['variance'] is not None else 0
+            result['dates'].append(row['created_at'])
+            result['sentiment'].append(sentiment)
+            result['stdev'].append(stdev)
+
+        return result
 
     def get_sentiment_per_state_per_day(self):
         select_sql = "SELECT u.state_code, avg(t.sentiment_pol) AS sentiment, AVG(t.sentiment_pol*t.sentiment_pol) - AVG(t.sentiment_pol)*AVG(t.sentiment_pol) AS variance, DATE(t.created_at) AS created_at from tweet t " \
@@ -461,7 +521,6 @@ class DataSelector(DBManager):
             result[row['text']] = row['popularity']
         return result
 
-
     # ----- EPIDEMIC MODEL -----
     def get_countries(self):
         select_sql = "SELECT id, name FROM country WHERE state == ''"
@@ -475,10 +534,14 @@ class DataSelector(DBManager):
         result = self.cur.fetchone()[0]
         return result
 
-    def get_countries_populations(self, countries_names):
+    def get_countries_populations(self, countries_names, state_name=None, all=False):
         countries_names_str = ', '.join(list(map(lambda country: "'" + country + "'", countries_names)))
 
-        select_sql = "SELECT c.name AS country_name, c.population FROM country c WHERE c.name in ( " + countries_names_str + " )"
+        select_sql = "SELECT c.name AS country_name, c.population FROM country c "
+        if not all:
+            select_sql += " WHERE c.name in ( " + countries_names_str + " ) "
+        if state_name is not None:
+            select_sql += " AND c.state == '" + state_name + "' "
         self.cur.execute(select_sql)
         data = self.cur.fetchall()
         result = dict()
@@ -487,7 +550,7 @@ class DataSelector(DBManager):
         return result
 
     def get_epidemic_data_in(self, countries_names: list, columns: list, epidemic_name: str, to_date=None,
-                             since_epidemy_start=False):
+                             since_epidemy_start=False, state_name=None, from_date=None):
         if to_date is None:
             to_date = self.today
         else:
@@ -498,15 +561,21 @@ class DataSelector(DBManager):
 
         select_sql = "SELECT c.name AS country_name, e.date, " + columns_str + " FROM " + epidemic_name + " e " \
                                                                                                           "JOIN COUNTRY c on c.id = e.country_id " \
-                                                                                                          "WHERE c.name in (" + countries_str + ") AND date <= '" + to_date + "' " \
-                                                                                                                                                                              "ORDER BY e.date ASC"
+                                                                                                          "WHERE c.name in (" + countries_str + ") AND date <= '" + to_date + "' "
+        if state_name is None:
+            state_name = ''
+        select_sql += " AND c.state == '" + state_name + "' "
+        if from_date is not None:
+            select_sql += " AND e.date >= '"+from_date+"' "
+
+        select_sql += " ORDER BY e.date ASC"
 
         self.cur.execute(select_sql)
         raw_data = self.cur.fetchall()
 
         data = dict()
         data['dates'] = []
-        population = self.get_countries_populations(countries_names)
+        population = self.get_countries_populations(countries_names, state_name)
         for country_name in countries_names:
             data[country_name] = dict()
             data[country_name]['population'] = population[country_name]
@@ -544,7 +613,7 @@ class DataSelector(DBManager):
         select_sql = "SELECT avg(t.sentiment_pol) AS sentiment, " \
                      "AVG(t.sentiment_pol*t.sentiment_pol) - AVG(t.sentiment_pol)*AVG(t.sentiment_pol) AS variance, " \
                      "DATE(t.created_at) AS created_at from tweet t " \
-                     "WHERE t.sentiment_pol is not null " \
+                     "WHERE t.sentiment_pol is not null AND lang = 'pl' " \
                      "GROUP BY DATE(t.created_at);"
 
         self.cur.execute(select_sql)
@@ -577,4 +646,20 @@ class DataSelector(DBManager):
             result['number'].append(row['number'])
             result['date'].append(row['created_at'])
 
+        return result
+
+    def get_tweets_per_day_in(self, country, state, from_date, to_date):
+        select_sql = "SELECT DATE(t.created_at) AS date, count(*) AS number FROM tweet t " \
+                     "JOIN user u on t.user_id = u.id " \
+                     "WHERE t.sentiment_pol < 0 AND t.created_at >= '" + from_date + "' AND t.created_at <= '" + to_date + "' AND u.country_code = '" + country + "' "
+        if state is not None:
+            select_sql += "AND u.state_code = '" + state + "'"
+        select_sql += " GROUP BY DATE(t.created_at) ORDER BY date "
+
+        self.cur.execute(select_sql)
+        data = self.cur.fetchall()
+        result = []
+
+        for row in data:
+            result.append(row['number'])
         return result

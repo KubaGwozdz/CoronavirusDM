@@ -39,6 +39,8 @@ def sentiment_per_country(db, from_date=None, to_date=None, month_name=None):
         z=data['polarity'],
         text=data['country_name'],
         colorscale='RdYlGn',
+        zmin=-1,
+        zmax=1,
         autocolorscale=False,
         marker_line_color='darkgray',
         marker_line_width=0.5,
@@ -55,7 +57,6 @@ def sentiment_per_country(db, from_date=None, to_date=None, month_name=None):
     )
     polarity_fig.update_layout(
         geo=go.layout.Geo(
-            # range_color=(-1, 1)
         )
     )
 
@@ -69,6 +70,8 @@ def sentiment_per_state(db, from_date=None, to_date=None, month_name=None):
         locations=data['state_code'],
         locationmode='USA-states',
         z=data['polarity'],
+        zmin=-1,
+        zmax=1,
         text=data['state_name'],
         colorscale='RdYlGn',
         autocolorscale=False,
@@ -88,7 +91,6 @@ def sentiment_per_state(db, from_date=None, to_date=None, month_name=None):
     polarity_fig.update_layout(
         geo=go.layout.Geo(
             scope='usa',
-            # range_color=(-1, 1)
         )
     )
 
@@ -108,12 +110,12 @@ if __name__ == "__main__":
     # tweets_per_country_fig_april = tweets_per_country(db, *april)
     # tweets_per_country_fig_april.show()
     #
-    # polarity_fig_march = sentiment_per_country(db, *march)
-    # polarity_fig_march.show()
-    #
-    # polarity_fig_april = sentiment_per_country(db, *april)
-    # polarity_fig_april.show()
+    polarity_fig_march = sentiment_per_country(db, *march)
+    polarity_fig_march.show()
 
+    polarity_fig_april = sentiment_per_country(db, *april)
+    polarity_fig_april.show()
+    #
     polarity_USA_fig_march = sentiment_per_state(db, *march)
     polarity_USA_fig_march.show()
 

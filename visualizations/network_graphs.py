@@ -78,8 +78,8 @@ def draw_plotly_graph(G, MAX_W, month_name):
 
     node_trace = go.Scatter(
         x=node_x, y=node_y,
-        # mode='markers',
-        mode='markers+text',
+        mode='markers',
+        # mode='markers+text',
         hoverinfo='text',
         marker=dict(
             color=colors,
