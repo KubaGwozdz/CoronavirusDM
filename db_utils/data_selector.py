@@ -521,6 +521,7 @@ class DataSelector(DBManager):
             result[row['text']] = row['popularity']
         return result
 
+
     # ----- EPIDEMIC MODEL -----
     def get_countries(self):
         select_sql = "SELECT id, name FROM country WHERE state == ''"
@@ -663,3 +664,81 @@ class DataSelector(DBManager):
         for row in data:
             result.append(row['number'])
         return result
+
+
+    def get_sentiment_data_in(self, country_code: str, to_date=None, since_epidemy_start=False):
+
+        if to_date is None:
+            to_date = self.today
+        else:
+            to_date = self.parse_datetime_to_date(to_date)
+
+        code_str = "'" + country_code + "'"
+
+
+        select_all = "SELECT count(*) AS users, data FROM ( " + \
+                         "SELECT count(*), DATE(t.created_at) AS data " + \
+                         "FROM tweet t " + \
+                         "JOIN user u ON t.user_id = u.id " + \
+                         "WHERE t.sentiment_pol is not null " + \
+                         "AND u.country_code = " + code_str + " " + \
+                         "GROUP BY DATE(t.created_at), t.user_id) " + \
+                     "GROUP BY data "
+
+        select_positive = "SELECT count(*) AS users, data FROM ( " + \
+                         "SELECT count(*), DATE(t.created_at) AS data " + \
+                         "FROM tweet t " + \
+                         "JOIN user u ON t.user_id = u.id " + \
+                         "WHERE t.sentiment_pol > 0.1 " + \
+                         "AND u.country_code = " + code_str + " " + \
+                         "GROUP BY DATE(t.created_at), t.user_id) " + \
+                     "GROUP BY data "
+        select_negative = "SELECT count(*) AS users, data FROM ( " + \
+                         "SELECT count(*), DATE(t.created_at) AS data " + \
+                         "FROM tweet t " + \
+                         "JOIN user u ON t.user_id = u.id " + \
+                         "WHERE t.sentiment_pol < -0.1 " + \
+                         "AND u.country_code = " + code_str + " " + \
+                         "GROUP BY DATE(t.created_at), t.user_id) " + \
+                     "GROUP BY data "
+        select_neutral = "SELECT count(*) AS users, data FROM ( " + \
+                         "SELECT count(*), DATE(t.created_at) AS data " + \
+                         "FROM tweet t " + \
+                         "JOIN user u ON t.user_id = u.id " + \
+                         "WHERE t.sentiment_pol <= 0.1 AND t.sentiment_pol >= -0.1 " + \
+                         "AND u.country_code = " + code_str + " " + \
+                         "GROUP BY DATE(t.created_at), t.user_id) " + \
+                     "GROUP BY data "
+
+
+        self.cur.execute(select_all)
+        raw_data_all = self.cur.fetchall()
+
+        self.cur.execute(select_positive)
+        raw_data_positive = self.cur.fetchall()
+
+        self.cur.execute(select_negative)
+        raw_data_negative = self.cur.fetchall()
+
+        self.cur.execute(select_neutral)
+        raw_data_neutral = self.cur.fetchall()
+
+        data = dict()
+        data['dates'] = []
+        data[country_code] = dict()
+        data[country_code]["users"] = []
+        data[country_code]["negative"] = []
+        data[country_code]["positive"] = []
+        data[country_code]["neutral"] = []
+
+        epidemy_started = not since_epidemy_start
+        for row in raw_data_all:
+            data[country_code]["users"].append((row["users"], row["data"]))
+        for row in raw_data_negative:
+            data[country_code]["negative"].append((row["users"], row["data"]))
+        for row in raw_data_positive:
+            data[country_code]["positive"].append((row["users"], row["data"]))
+        for row in raw_data_neutral:
+            data[country_code]["neutral"].append((row["users"], row["data"]))
+
+        return data

@@ -3,6 +3,7 @@ from plotly.subplots import make_subplots
 
 
 from db_utils.data_selector import DataSelector
+from sentiment.sentiment_model import sentiment_SIR
 from epidemic_analysis.epidemic_models import SIS, SIR, SEIR, SEIRD, TwitterModel
 
 import lmfit
@@ -223,6 +224,12 @@ if __name__ == "__main__":
     # c19_infected_in_POL_fig = affected_in(["Poland", "Italy"], ["deaths", 'confirmed'], "COVID19", db)
     # c19_infected_in_POL_fig.show()
 
+    # SIR_predictction_fig = SIR_predicted_in("Italy", "COVID19", 100, db, SIR)
+    # SIR_predictction_fig.show()
+
+    # SEIR_predictction_fig = SEIR_predicted_in("Italy", "COVID19", 100, db, SEIR)
+    # SEIR_predictction_fig.show()
+
     # country = COUNTRY_NAME, STATE_NAME=None
     # country = "US", ''
     # country = "Poland", None
@@ -253,3 +260,6 @@ if __name__ == "__main__":
         country_name += ', ' + state
     tw_model = TwitterModel(db, prediction_period, *tw_country)
     show_tweets_with_pandemic(tw_model, country_name)
+
+    SENTIMENT_test = db.get_sentiment_data_in(country_code='us')
+    print(SENTIMENT_test)
