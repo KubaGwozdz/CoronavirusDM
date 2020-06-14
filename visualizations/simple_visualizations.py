@@ -502,38 +502,39 @@ if __name__ == "__main__":
 
     # tweets_per_day_fig = tweets_per_day(db)
     # tweets_per_day_fig.show()
-    #
+
     # retweets_per_day_fig = retweets_per_day(db)
     # retweets_per_day_fig.show()
 
     # tags_per_day_fig = most_popular_hashtags_per_day(db)
     # tags_per_day_fig.show()
-    #
+
     # popular_users_followers, popular_users_friends = popular_users(db)
     # popular_users_followers.show()
     # popular_users_friends.show()
-    #
+
     # active_users_march_fig = most_active_users(db, *march)
     # active_users_march_fig.show()
-    #
+
     # most_active_users_march_retweets_fig = most_active_users_retweets(db, *march)
     # most_active_users_march_retweets_fig.show()
 
     # most_popular_hashtags_march_fig = most_popular_hashtags(db, *march)
     # most_popular_hashtags_march_fig.show()
 
+
     # most_popular_hashtags_april_fig = most_popular_hashtags(db, *april)
     # most_popular_hashtags_april_fig.show()
 
     # active_users_april_fig = most_active_users(db, *april)
     # active_users_april_fig.show()
-    #
+
     # most_active_users_april_retweets_fig = most_active_users_retweets(db, *april)
     # most_active_users_april_retweets_fig.show()
 
     # active_users_per_day_tweets_fig = most_active_users_per_day_tweets(db)
     # active_users_per_day_tweets_fig.show()
-    #
+
     # tw_lang_per_day_fig = tw_lang_per_day(db)
     # tw_lang_per_day_fig.show()
 
@@ -542,10 +543,10 @@ if __name__ == "__main__":
     # inf_rtw_per_day_fig.show()
     # inf_rep_per_day_fig.show()
     # inf_q_per_day_fig.show()
-    #
+
     # newly_created_accounts_fig = newly_created_accounts(db)
     # newly_created_accounts_fig.show()
-    #
+
     # newly_created_accounts_pattern_fig = newly_created_accounts_pattern(db)
     # newly_created_accounts_pattern_fig.show()
 

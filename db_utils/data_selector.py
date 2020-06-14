@@ -678,8 +678,7 @@ class DataSelector(DBManager):
         data = self.cur.fetchall()
         return data[0]['number']
 
-
-    def get_sentiment_data_in(self, country_code: str, to_date=None, since_epidemy_start=False):
+    def get_sentiment_data_in(self, country_code: str, to_date=None):
 
         if to_date is None:
             to_date = self.today
@@ -744,9 +743,10 @@ class DataSelector(DBManager):
         data[country_code]["positive"] = []
         data[country_code]["neutral"] = []
 
-        epidemy_started = not since_epidemy_start
         for row in raw_data_all:
             data[country_code]["users"].append((row["users"], row["data"]))
+            if row['data'] not in data['dates']:
+                data['dates'].append(row['data'] + " 00:00:00")
         for row in raw_data_negative:
             data[country_code]["negative"].append((row["users"], row["data"]))
         for row in raw_data_positive:

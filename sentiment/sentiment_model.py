@@ -24,9 +24,9 @@ R - recovered, lost interest in topic
 
 
 class sentiment_SIR(EpidemicModel):
-    def __init__(self, db, virus_name, country_name, predict_range, training_period=-1):
+    def __init__(self, db, country_name, predict_range, training_period=-1):
 
-        data = db.get_sentiment_data_in([country_name], since_epidemy_start=True)
+        data = db.get_sentiment_data_in(country_name)
 
         timeline = data['dates']
         extended_timeline = timeline
@@ -34,6 +34,9 @@ class sentiment_SIR(EpidemicModel):
         self.positive = data[country_name]['positive']
         self.neutral = data[country_name]['neutral']
         self.negative = data[country_name]['negative']
+
+        self.active = [self.neutral[i] + self.positive[i] + self.negative[i] for i in
+                       range(len(self.positive))]
 
         N = data[country_name]['users']
 
@@ -43,7 +46,7 @@ class sentiment_SIR(EpidemicModel):
 
         self.I0 = self.Pp0 + self.N0 + self.Pm0
         self.R0 = 0
-        self.S0 = N - self.I0 - self.R0
+        self.S0 = int(N[0][0]) - self.I0 - self.R0
         self.Y0 = self.S0, self.Pp0, self.N0, self.Pm0, self.R0
 
         self.beta_PpN = 0.4

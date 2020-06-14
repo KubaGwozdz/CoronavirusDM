@@ -4,7 +4,7 @@ from plotly.subplots import make_subplots
 
 from db_utils.data_selector import DataSelector
 from sentiment.sentiment_model import sentiment_SIR
-from epidemic_analysis.epidemic_models import SIS, SIR, SEIR, SEIRD, TwitterModel
+from epidemic_analysis.epidemic_models import SIS, SIR, SEIR, SEIRD, TwitterModel, TwitterSentimentModel
 
 import lmfit
 from lmfit.lineshapes import gaussian, lorentzian
@@ -325,6 +325,223 @@ def show_tweets_with_pandemic(tw_model, country_name):
     fig.show()
 
 
+def show_tweets_sentiment_with_pandemic(tw_model, country_name):
+    S, E, I, R, TP, TN = tw_model.train_and_predict()
+    fig = make_subplots(specs=[[{"secondary_y": True}]])
+    fig.add_trace(
+        go.Bar(
+            x=tw_model.timeline,
+            y=tw_model.tweets,
+            name="number of tweets",
+            marker_color="rgb(51,153,255)",
+            opacity=0.5
+        ),
+        secondary_y=True
+    )
+    fig.add_trace(
+        go.Bar(
+            x=tw_model.timeline,
+            y=tw_model.positive_tweets,
+            name="number of positive tweets",
+            marker_color="rgb(102,189,99)",
+            opacity=0.5
+        ),
+        secondary_y=True
+    )
+    fig.add_trace(
+        go.Bar(
+            x=tw_model.timeline,
+            y=tw_model.negative_tweets,
+            name="number of negative tweets",
+            marker_color="rgb(215,48,39)",
+            opacity=0.5
+        ),
+        secondary_y=True
+    )
+    fig.add_trace(
+        go.Scatter(
+            x=tw_model.timeline,
+            y=tw_model.active,
+            mode='lines',
+            name="active"),
+        secondary_y=False
+    )
+    fig.add_trace(
+        go.Scatter(
+            x=tw_model.timeline,
+            y=tw_model.confirmed,
+            mode='lines',
+            name="confirmed"),
+        secondary_y=False
+    )
+    fig.add_trace(
+        go.Scatter(
+            x=tw_model.timeline,
+            y=tw_model.recovered,
+            mode='lines',
+            name="recovered"),
+        secondary_y=False
+    )
+    fig.add_trace(
+        go.Scatter(
+            x=tw_model.timeline,
+            y=tw_model.deaths,
+            mode='lines',
+            name="deaths"),
+        secondary_y=False
+    )
+    fig.add_trace(
+        go.Scatter(
+            x=tw_model.extended_timeline,
+            y=S,
+            mode='lines',
+            name="S"),
+        secondary_y=False
+    )
+    fig.add_trace(
+        go.Scatter(
+            x=tw_model.extended_timeline,
+            y=E,
+            mode='lines',
+            name="E"),
+        secondary_y=False
+    )
+    fig.add_trace(
+        go.Scatter(
+            x=tw_model.extended_timeline,
+            y=I,
+            mode='lines',
+            name="I"),
+        secondary_y=False
+    )
+    fig.add_trace(
+        go.Scatter(
+            x=tw_model.extended_timeline,
+            y=R,
+            mode='lines',
+            name="R"),
+        secondary_y=False
+    )
+    fig.add_trace(
+        go.Scatter(
+            x=tw_model.extended_timeline,
+            y=TP,
+            mode='lines',
+            name="TP"),
+        secondary_y=True
+    )
+    fig.add_trace(
+        go.Scatter(
+            x=tw_model.extended_timeline,
+            y=TN,
+            mode='lines',
+            name="TN"),
+        secondary_y=True
+    )
+    fig.add_trace(
+        go.Scatter(
+            x=tw_model.timeline,
+            y=tw_model.tweets_line,
+            mode='lines',
+            name="tweets affecting"),
+        secondary_y=True
+    )
+
+    fig.update_xaxes(title_text="date")
+
+    fig.update_yaxes(title_text="Number of people", secondary_y=False)
+    fig.update_yaxes(title_text="Number of tweets", secondary_y=True)
+
+    fig.update_layout(
+        title_text="SEIR_TP_TN: " + country_name,
+    )
+    fig.show()
+
+
+def show_tweets_sentiment_model(tw_model, country_name):
+    S, Pp, N, Pm, R = tw_model.predict()
+    fig = make_subplots(specs=[[{"secondary_y": True}]])
+    fig.add_trace(
+        go.Bar(
+            x=tw_model.timeline,
+            y=tw_model.positive,
+            name="number of positive tweets",
+            marker_color="rgb(102,189,99)",
+            opacity=0.5
+        ),
+        secondary_y=True
+    )
+    fig.add_trace(
+        go.Bar(
+            x=tw_model.timeline,
+            y=tw_model.negative,
+            name="number of negative tweets",
+            marker_color="rgb(215,48,39)",
+            opacity=0.5
+        ),
+        secondary_y=True
+    )
+    fig.add_trace(
+        go.Bar(
+            x=tw_model.timeline,
+            y=tw_model.neutral,
+            name="number of neutral tweets",
+            marker_color="rgb(51,153,255)",
+            opacity=0.5
+        ),
+        secondary_y=True
+    )
+    fig.add_trace(
+        go.Scatter(
+            x=tw_model.extended_timeline,
+            y=S,
+            mode='lines',
+            name="S"),
+        secondary_y=False
+    )
+    fig.add_trace(
+        go.Scatter(
+            x=tw_model.extended_timeline,
+            y=R,
+            mode='lines',
+            name="R"),
+        secondary_y=False
+    )
+    fig.add_trace(
+        go.Scatter(
+            x=tw_model.extended_timeline,
+            y=Pp,
+            mode='lines',
+            name="Pp"),
+        secondary_y=False
+    )
+    fig.add_trace(
+        go.Scatter(
+            x=tw_model.extended_timeline,
+            y=Pm,
+            mode='lines',
+            name="Pm"),
+        secondary_y=False
+    )
+    fig.add_trace(
+        go.Scatter(
+            x=tw_model.extended_timeline,
+            y=N,
+            mode='lines',
+            name="N"),
+        secondary_y=False
+    )
+
+    fig.update_xaxes(title_text="date")
+
+    fig.update_yaxes(title_text="Number of tweets", secondary_y=True)
+
+    fig.update_layout(
+        title_text="S_PpNPm_R: " + country_name,
+    )
+    fig.show()
+
+
 if __name__ == "__main__":
     db = DataSelector()
 
@@ -371,11 +588,11 @@ if __name__ == "__main__":
     SEIR_model = SEIR(db, "COVID19", country_name, prediction_period, state_name=state)
     SEIR_model.train()
     SEIR = SEIR_model.predict()
-    # show_SEIR(SEIR_model, country_displayname, *SEIR)
+    show_SEIR(SEIR_model, country_displayname, *SEIR)
 
-    tw_model = TwitterModel(db, prediction_period, *tw_country)
+    tw_model = TwitterSentimentModel(db, prediction_period, *tw_country)
     tw_model.initialize(SEIR_model.beta, SEIR_model.gamma, SEIR_model.delta, SEIR_model.I0)
-    show_tweets_with_pandemic(tw_model, country_displayname)
+    show_tweets_sentiment_with_pandemic(tw_model, country_displayname)
 
     SENTIMENT_test = db.get_sentiment_data_in(country_code='us')
     print(SENTIMENT_test)
