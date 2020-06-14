@@ -567,7 +567,7 @@ class DataSelector(DBManager):
             state_name = ''
         select_sql += " AND c.state == '" + state_name + "' "
         if from_date is not None:
-            select_sql += " AND e.date >= '"+from_date+"' "
+            select_sql += " AND e.date >= '" + from_date + "' "
 
         select_sql += " ORDER BY e.date ASC"
 
@@ -650,20 +650,33 @@ class DataSelector(DBManager):
         return result
 
     def get_tweets_per_day_in(self, country, state, from_date, to_date):
-        select_sql = "SELECT DATE(t.created_at) AS date, count(*) AS number FROM tweet t " \
+        select_sql = "SELECT DATE(t.created_at) AS date, count(*) AS number, count(case when t.sentiment_pol > 0 THEN t.sentiment_pol end) AS positive, count(case when t.sentiment_pol <= 0 then t.sentiment_pol end) AS negative FROM tweet t " \
                      "JOIN user u on t.user_id = u.id " \
-                     "WHERE t.sentiment_pol < 0 AND t.created_at >= '" + from_date + "' AND t.created_at <= '" + to_date + "' AND u.country_code = '" + country + "' "
+                     "WHERE t.created_at >= '" + from_date + "' AND t.created_at <= '" + to_date + "' AND u.country_code = '" + country + "' "
         if state is not None:
             select_sql += "AND u.state_code = '" + state + "'"
         select_sql += " GROUP BY DATE(t.created_at) ORDER BY date "
 
         self.cur.execute(select_sql)
         data = self.cur.fetchall()
-        result = []
+        total = []
+        positive = []
+        negative = []
 
         for row in data:
-            result.append(row['number'])
-        return result
+            total.append(row['number'])
+            positive.append(row['positive'])
+            negative.append(row['negative'])
+        return total, positive, negative
+
+    def get_number_of_users_in(self, country_code, state=None):
+        select_sql = "SELECT count(*) AS number FROM user WHERE country_code = '" + country_code + "' "
+        if state is not None:
+            select_sql += " AND state_code = '" + state + "'"
+
+        self.cur.execute(select_sql)
+        data = self.cur.fetchall()
+        return data[0]['number']
 
 
     def get_sentiment_data_in(self, country_code: str, to_date=None, since_epidemy_start=False):

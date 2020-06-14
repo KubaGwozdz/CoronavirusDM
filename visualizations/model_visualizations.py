@@ -33,11 +33,11 @@ def SIR_predicted_in(country, virus_name, predict_range, db, pandemic_model):
     S, I, R = model.train_and_predict()
     fig = go.Figure()
 
-    fig.add_trace(go.Scatter(x=model.timeline,
-                             y=model.best_fit,
-                             mode='lines',
-                             name='best_fit'
-                             ))
+    # fig.add_trace(go.Scatter(x=model.timeline,
+    #                          y=model.best_fit,
+    #                          mode='lines',
+    #                          name='best_fit'
+    #                          ))
     fig.add_trace(go.Scatter(x=model.extended_timeline,
                              y=S,
                              mode='lines',
@@ -72,11 +72,11 @@ def SEIR_predicted_in(country, virus_name, predict_range, db, pandemic_model, in
     # S, E, I, R = model.fine_tune_and_predict()
     fig = go.Figure()
 
-    fig.add_trace(go.Scatter(x=model.timeline,
-                             y=model.best_fit,
-                             mode='lines',
-                             name='best_fit'
-                             ))
+    # fig.add_trace(go.Scatter(x=model.timeline,
+    #                          y=model.best_fit,
+    #                          mode='lines',
+    #                          name='best_fit'
+    #                          ))
     fig.add_trace(go.Scatter(x=model.extended_timeline,
                              y=S,
                              mode='lines',
@@ -161,14 +161,75 @@ def SEIRD_predicted_in(country, virus_name, predict_range, db, pandemic_model, i
     return fig
 
 
+def show_SEIR(model, country_name, S, E, I, R):
+    fig = go.Figure()
+
+    fig.add_trace(go.Scatter(x=model.timeline,
+                             y=model.best_fit,
+                             mode='lines',
+                             name='best_fit'
+                             ))
+    fig.add_trace(go.Scatter(x=model.extended_timeline,
+                             y=S,
+                             mode='lines',
+                             name="S"
+                             ))
+    fig.add_trace(go.Scatter(x=model.extended_timeline,
+                             y=E,
+                             mode='lines',
+                             name="E"
+                             ))
+    fig.add_trace(go.Scatter(x=model.extended_timeline,
+                             y=I,
+                             mode='lines',
+                             name="I"
+                             ))
+    fig.add_trace(go.Scatter(x=model.extended_timeline,
+                             y=R,
+                             mode='lines',
+                             name="R"
+                             ))
+    fig.add_trace(go.Scatter(x=model.timeline,
+                             y=model.active,
+                             mode='lines',
+                             name="active"))
+    fig.update_layout(
+        title_text="SEIR: " + country_name
+    )
+    fig.show()
+
+
+
 def show_tweets_with_pandemic(tw_model, country_name):
+    S, E, I, R, T = tw_model.train_and_predict()
     fig = make_subplots(specs=[[{"secondary_y": True}]])
     fig.add_trace(
-        go.Scatter(
+        go.Bar(
             x=tw_model.timeline,
             y=tw_model.tweets,
-            mode="lines",
-            name="number of tweets"
+            name="number of tweets",
+            marker_color="rgb(51,153,255)",
+            opacity=0.5
+        ),
+        secondary_y=True
+    )
+    fig.add_trace(
+        go.Bar(
+            x=tw_model.timeline,
+            y=tw_model.positive_tweets,
+            name="number of positive tweets",
+            marker_color="rgb(102,189,99)",
+            opacity=0.5
+        ),
+        secondary_y=True
+    )
+    fig.add_trace(
+        go.Bar(
+            x=tw_model.timeline,
+            y=tw_model.negative_tweets,
+            name="number of negative tweets",
+            marker_color="rgb(215,48,39)",
+            opacity=0.5
         ),
         secondary_y=True
     )
@@ -204,6 +265,54 @@ def show_tweets_with_pandemic(tw_model, country_name):
             name="deaths"),
         secondary_y=False
     )
+    fig.add_trace(
+        go.Scatter(
+            x=tw_model.extended_timeline,
+            y=S,
+            mode='lines',
+            name="S"),
+        secondary_y=False
+    )
+    fig.add_trace(
+        go.Scatter(
+            x=tw_model.extended_timeline,
+            y=E,
+            mode='lines',
+            name="E"),
+        secondary_y=False
+    )
+    fig.add_trace(
+        go.Scatter(
+            x=tw_model.extended_timeline,
+            y=I,
+            mode='lines',
+            name="I"),
+        secondary_y=False
+    )
+    fig.add_trace(
+        go.Scatter(
+            x=tw_model.extended_timeline,
+            y=R,
+            mode='lines',
+            name="R"),
+        secondary_y=False
+    )
+    fig.add_trace(
+        go.Scatter(
+            x=tw_model.extended_timeline,
+            y=T,
+            mode='lines',
+            name="T"),
+        secondary_y=True
+    )
+    fig.add_trace(
+        go.Scatter(
+            x=tw_model.timeline,
+            y=tw_model.tweets_line,
+            mode='lines',
+            name="tweets affecting"),
+        secondary_y=True
+    )
 
     fig.update_xaxes(title_text="date")
 
@@ -211,7 +320,7 @@ def show_tweets_with_pandemic(tw_model, country_name):
     fig.update_yaxes(title_text="Number of tweets", secondary_y=True)
 
     fig.update_layout(
-        title_text="COVID19 in " + country_name
+        title_text="SEIR_T: " + country_name,
     )
     fig.show()
 
@@ -231,20 +340,19 @@ if __name__ == "__main__":
     # SEIR_predictction_fig.show()
 
     # country = COUNTRY_NAME, STATE_NAME=None
-    # country = "US", ''
-    # country = "Poland", None
+    country = "Poland", None
     # country = "Italy", None
-    country = "India", None
+    # country = "India", None
 
     prediction_period = 100
 
     # SIR_predictction_fig, SIR_model = SIR_predicted_in(country, "COVID19", prediction_period, db, SIR)
     # SIR_predictction_fig.show()
-    #
+
     # init_vals = SIR_model.beta, SIR_model.gamma, SIR_model.I0
     # SEIR_predictction_fig, SEIR_model = SEIR_predicted_in(country, "COVID19", prediction_period, db, SEIR, init_vals)
     # SEIR_predictction_fig.show()
-    #
+
     # init_vals = SIR_model.beta, SIR_model.gamma, SEIR_model.delta, SIR_model.I0
     # SEIRD_predictction_fig = SEIRD_predicted_in(country, "COVID19", prediction_period, db, SEIRD, init_vals)
     # SEIRD_predictction_fig.show()
@@ -252,14 +360,22 @@ if __name__ == "__main__":
 
 
     # tw_country = "Italy", None
-    # tw_country = "Poland", None
-    tw_country = "US", None
+    tw_country = "Poland", None
+    # tw_country = "US", None
     # tw_country = "US", 'NY'
     country_name, state = tw_country
+    country_displayname = country_name
     if state is not None:
-        country_name += ', ' + state
+        country_displayname += ', ' + state
+
+    SEIR_model = SEIR(db, "COVID19", country_name, prediction_period, state_name=state)
+    SEIR_model.train()
+    SEIR = SEIR_model.predict()
+    # show_SEIR(SEIR_model, country_displayname, *SEIR)
+
     tw_model = TwitterModel(db, prediction_period, *tw_country)
-    show_tweets_with_pandemic(tw_model, country_name)
+    tw_model.initialize(SEIR_model.beta, SEIR_model.gamma, SEIR_model.delta, SEIR_model.I0)
+    show_tweets_with_pandemic(tw_model, country_displayname)
 
     SENTIMENT_test = db.get_sentiment_data_in(country_code='us')
     print(SENTIMENT_test)
